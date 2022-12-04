@@ -29,7 +29,7 @@ class KissgoddessGalleryExtractor(GalleryExtractor):
 
     def __init__(self, match):
         self.gallery_id = match.group(1)
-        url = "{}/album/{}.html".format(self.root, self.gallery_id)
+        url = f"{self.root}/album/{self.gallery_id}.html"
         GalleryExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -49,8 +49,7 @@ class KissgoddessGalleryExtractor(GalleryExtractor):
                 yield url, None
 
             pnum += 1
-            url = "{}/album/{}_{}.html".format(
-                self.root, self.gallery_id, pnum)
+            url = f"{self.root}/album/{self.gallery_id}_{pnum}.html"
             try:
                 page = self.request(url).text
             except exception.HttpError:
@@ -73,10 +72,10 @@ class KissgoddessModelExtractor(Extractor):
         self.model = match.group(1)
 
     def items(self):
-        url = "{}/people/{}.html".format(self.root, self.model)
+        url = f"{self.root}/people/{self.model}.html"
         page = self.request(url).text
 
         data = {"_extractor": KissgoddessGalleryExtractor}
         for path in text.extract_iter(page, 'thumb"><a href="/album/', '"'):
-            url = self.root + "/album/" + path
+            url = f"{self.root}/album/{path}"
             yield Message.Queue, url, data

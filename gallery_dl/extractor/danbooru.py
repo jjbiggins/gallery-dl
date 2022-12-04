@@ -62,15 +62,14 @@ class DanbooruExtractor(BaseExtractor):
         data = self.metadata()
         for post in self.posts():
 
-            file = post.get("file")
-            if file:
+            if file := post.get("file"):
                 url = file["url"]
                 if not url:
                     md5 = file["md5"]
-                    url = file["url"] = (
-                        "https://static1.{}/data/{}/{}/{}.{}".format(
-                            self.root[8:], md5[0:2], md5[2:4], md5, file["ext"]
-                        ))
+                    url = file[
+                        "url"
+                    ] = f'https://static1.{self.root[8:]}/data/{md5[:2]}/{md5[2:4]}/{md5}.{file["ext"]}'
+
                 post["filename"] = file["md5"]
                 post["extension"] = file["ext"]
 
@@ -134,15 +133,16 @@ class DanbooruExtractor(BaseExtractor):
             else:
                 for post in reversed(posts):
                     if "id" in post:
-                        params["page"] = "b{}".format(post["id"])
+                        params["page"] = f'b{post["id"]}'
                         break
                 else:
                     return
 
     def _ugoira_frames(self, post):
-        data = self.request("{}/posts/{}.json?only=media_metadata".format(
-            self.root, post["id"])
+        data = self.request(
+            f'{self.root}/posts/{post["id"]}.json?only=media_metadata'
         ).json()["media_metadata"]["metadata"]
+
 
         ext = data["ZIP:ZipFileName"].rpartition(".")[2]
         fmt = ("{:>06}." + ext).format
@@ -159,8 +159,7 @@ INSTANCES = {
     "e621": {
         "root": None,
         "pattern": r"e(?:621|926)\.net",
-        "headers": {"User-Agent": "gallery-dl/{} (by mikf)".format(
-            __version__)},
+        "headers": {"User-Agent": f"gallery-dl/{__version__} (by mikf)"},
         "pools": "sort",
         "popular": "/popular.json",
         "page-limit": 750,
@@ -175,8 +174,9 @@ INSTANCES = {
     "aibooru": {
         "root": None,
         "pattern": r"(?:safe.)?aibooru\.online",
-    }
+    },
 }
+
 
 BASE_PATTERN = DanbooruExtractor.update(INSTANCES)
 
@@ -261,7 +261,7 @@ class DanbooruPoolExtractor(DanbooruExtractor):
         self.post_ids = ()
 
     def metadata(self):
-        url = "{}/pools/{}.json".format(self.root, self.pool_id)
+        url = f"{self.root}/pools/{self.pool_id}.json"
         pool = self.request(url).json()
         pool["name"] = pool["name"].replace("_", " ")
         self.post_ids = pool.pop("post_ids", ())
@@ -274,8 +274,10 @@ class DanbooruPoolExtractor(DanbooruExtractor):
             id_to_post = {
                 post["id"]: post
                 for post in self._pagination(
-                    "/posts.json", {"tags": "pool:" + self.pool_id})
+                    "/posts.json", {"tags": f"pool:{self.pool_id}"}
+                )
             }
+
 
             posts = []
             append = posts.append
@@ -289,7 +291,7 @@ class DanbooruPoolExtractor(DanbooruExtractor):
             return posts
 
         else:
-            params = {"tags": "pool:" + self.pool_id}
+            params = {"tags": f"pool:{self.pool_id}"}
             return self._pagination("/posts.json", params)
 
 
@@ -325,7 +327,7 @@ class DanbooruPostExtractor(DanbooruExtractor):
         self.post_id = match.group(match.lastindex)
 
     def posts(self):
-        url = "{}/posts/{}.json".format(self.root, self.post_id)
+        url = f"{self.root}/posts/{self.post_id}.json"
         post = self.request(url).json()
         return (post["post"] if "post" in post else post,)
 

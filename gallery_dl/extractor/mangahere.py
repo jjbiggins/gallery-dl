@@ -42,7 +42,7 @@ class MangahereChapterExtractor(MangahereBase, ChapterExtractor):
         self.part, self.volume, self.chapter = match.groups()
         url = self.url_fmt.format(self.part, 1)
         ChapterExtractor.__init__(self, match, url)
-        self.session.headers["Referer"] = self.root_mobile + "/"
+        self.session.headers["Referer"] = f"{self.root_mobile}/"
 
     def metadata(self, page):
         pos = page.index("</select>")
@@ -77,7 +77,7 @@ class MangahereChapterExtractor(MangahereBase, ChapterExtractor):
             page = self.request(self.url_fmt.format(self.part, pnum)).text
 
     def _get_title(self):
-        url = "{}/manga/{}/".format(self.root, self.part)
+        url = f"{self.root}/manga/{self.part}/"
         page = self.request(url).text
 
         try:
@@ -131,13 +131,13 @@ class MangahereMangaExtractor(MangahereBase, MangaExtractor):
             info, pos = text.extract(page, 'class="title3">', '<', pos)
             date, pos = text.extract(page, 'class="title2">', '<', pos)
 
-            match = re.match(
-                r"(?:Vol\.0*(\d+) )?Ch\.0*(\d+)(\S*)(?: - (.*))?", info)
-            if match:
+            if match := re.match(
+                r"(?:Vol\.0*(\d+) )?Ch\.0*(\d+)(\S*)(?: - (.*))?", info
+            ):
                 volume, chapter, minor, title = match.groups()
             else:
                 chapter, _, minor = url[:-1].rpartition("/c")[2].partition(".")
-                minor = "." + minor
+                minor = f".{minor}"
                 volume = 0
                 title = ""
 

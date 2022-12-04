@@ -71,7 +71,7 @@ class PillowfortExtractor(Extractor):
                 post.update(file)
                 text.nameext_from_url(url, post)
                 post["hash"], _, post["filename"] = \
-                    post["filename"].partition("_")
+                        post["filename"].partition("_")
 
                 if "id" not in file:
                     post["id"] = post["hash"]
@@ -188,7 +188,7 @@ class PillowfortPostExtractor(PillowfortExtractor):
     )
 
     def posts(self):
-        url = "{}/posts/{}/json/".format(self.root, self.item)
+        url = f"{self.root}/posts/{self.item}/json/"
         return (self.request(url).json(),)
 
 
@@ -203,7 +203,7 @@ class PillowfortUserExtractor(PillowfortExtractor):
     })
 
     def posts(self):
-        url = "{}/{}/json/".format(self.root, self.item)
+        url = f"{self.root}/{self.item}/json/"
         params = {"p": 1}
 
         while True:

@@ -60,9 +60,9 @@ def main():
         if args.postprocessors:
             config.set((), "postprocessors", args.postprocessors)
         if args.abort:
-            config.set((), "skip", "abort:" + str(args.abort))
+            config.set((), "skip", f"abort:{str(args.abort)}")
         if args.terminate:
-            config.set((), "skip", "terminate:" + str(args.terminate))
+            config.set((), "skip", f"terminate:{str(args.terminate)}")
         if args.cookies_from_browser:
             browser, _, profile = args.cookies_from_browser.partition(":")
             browser, _, keyring = browser.partition("+")
@@ -70,9 +70,7 @@ def main():
         for opts in args.options:
             config.set(*opts)
 
-        # signals
-        signals = config.get((), "signals-ignore")
-        if signals:
+        if signals := config.get((), "signals-ignore"):
             import signal
             if isinstance(signals, str):
                 signals = signals.split(",")
@@ -106,9 +104,7 @@ def main():
             extractor.modules = modules
             extractor._module_iter = iter(modules)
 
-        # format string separator
-        separator = config.get((), "format-separator")
-        if separator:
+        if separator := config.get((), "format-separator"):
             from . import formatter
             formatter._SEPARATOR = separator
 
@@ -123,10 +119,8 @@ def main():
             extra = ""
             if getattr(sys, "frozen", False):
                 extra = " - Executable"
-            else:
-                git_head = util.git_head()
-                if git_head:
-                    extra = " - Git HEAD: " + git_head
+            elif git_head := util.git_head():
+                extra = f" - Git HEAD: {git_head}"
 
             log.debug("Version %s%s", __version__, extra)
             log.debug("Python %s - %s",
@@ -201,10 +195,9 @@ def main():
                     except OSError as exc:
                         log.warning("input file: %s", exc)
 
-            # unsupported file logging handler
-            handler = output.setup_logging_handler(
-                "unsupportedfile", fmt="{message}")
-            if handler:
+            if handler := output.setup_logging_handler(
+                "unsupportedfile", fmt="{message}"
+            ):
                 ulog = logging.getLogger("unsupported")
                 ulog.addHandler(handler)
                 ulog.propagate = False

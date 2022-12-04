@@ -38,7 +38,7 @@ class SimplyhentaiGalleryExtractor(GalleryExtractor):
         subdomain, path = match.groups()
         if subdomain and subdomain not in ("www.", "old."):
             path = "/" + subdomain.rstrip(".") + path
-        url = "https://old.simply-hentai.com" + path
+        url = f"https://old.simply-hentai.com{path}"
         GalleryExtractor.__init__(self, match, url)
         self.session.headers["Referer"] = url
 
@@ -66,7 +66,7 @@ class SimplyhentaiGalleryExtractor(GalleryExtractor):
         return data
 
     def images(self, _):
-        url = self.gallery_url + "/all-pages"
+        url = f"{self.gallery_url}/all-pages"
         headers = {"Accept": "application/json"}
         images = self.request(url, headers=headers).json()
         return [
@@ -101,7 +101,7 @@ class SimplyhentaiImageExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.page_url = "https://old." + match.group(1)
+        self.page_url = f"https://old.{match.group(1)}"
         self.type = match.group(2)
 
     def items(self):
@@ -119,7 +119,7 @@ class SimplyhentaiImageExtractor(Extractor):
             tags = []
 
         if url.startswith("//"):
-            url = "https:" + url
+            url = f"https:{url}"
 
         data = text.nameext_from_url(url, {
             "title": text.unescape(title) if title else "",
@@ -157,7 +157,7 @@ class SimplyhentaiVideoExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.page_url = "https://" + match.group(1)
+        self.page_url = f"https://{match.group(1)}"
 
     def items(self):
         page = self.request(self.page_url).text
@@ -180,7 +180,7 @@ class SimplyhentaiVideoExtractor(Extractor):
             title, _, episode = title.rpartition(" Episode ")
 
         if video_url.startswith("//"):
-            video_url = "https:" + video_url
+            video_url = f"https:{video_url}"
 
         data = text.nameext_from_url(video_url, {
             "title": text.unescape(title),

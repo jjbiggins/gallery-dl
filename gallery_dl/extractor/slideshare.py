@@ -65,8 +65,7 @@ class SlidesharePresentationExtractor(GalleryExtractor):
 
     def __init__(self, match):
         self.user, self.presentation = match.groups()
-        url = "https://www.slideshare.net/{}/{}".format(
-            self.user, self.presentation)
+        url = f"https://www.slideshare.net/{self.user}/{self.presentation}"
         GalleryExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -79,8 +78,7 @@ class SlidesharePresentationExtractor(GalleryExtractor):
         published = extr('<div class="metadata-item">', '</div>')
 
         if descr.endswith("…"):
-            alt_descr = extr('slideshow-description-text"', '</p>')
-            if alt_descr:
+            if alt_descr := extr('slideshow-description-text"', '</p>'):
                 descr = text.remove_html(alt_descr.partition(">")[2]).strip()
 
         return {
@@ -102,8 +100,8 @@ class SlidesharePresentationExtractor(GalleryExtractor):
 
         # useing 'stripped_title' here is technically wrong, but it works all
         # the same, slideshare doesn't seem to care what characters go there
-        begin = "https://image.slidesharecdn.com/{}/95/{}-".format(
-            data["ppt_location"], data["stripped_title"])
+        begin = f'https://image.slidesharecdn.com/{data["ppt_location"]}/95/{data["stripped_title"]}-'
+
         end = "-1024.jpg?cb=" + str(data["timestamp"])
 
         return [

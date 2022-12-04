@@ -25,7 +25,7 @@ class BcyExtractor(Extractor):
     def __init__(self, match):
         Extractor.__init__(self, match)
         self.item_id = match.group(1)
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
 
     def items(self):
         sub = re.compile(r"^https?://p\d+-bcy"
@@ -94,7 +94,7 @@ class BcyExtractor(Extractor):
         """Returns an iterable with all relevant 'post' objects"""
 
     def _data_from_post(self, post_id):
-        url = "{}/item/detail/{}".format(self.root, post_id)
+        url = f"{self.root}/item/detail/{post_id}"
         page = self.request(url, notfound="post").text
         data = (text.extr(page, 'JSON.parse("', '");')
                 .replace('\\\\u002F', '/')
@@ -123,7 +123,7 @@ class BcyUserExtractor(BcyExtractor):
     )
 
     def posts(self):
-        url = self.root + "/apiv3/user/selfPosts"
+        url = f"{self.root}/apiv3/user/selfPosts"
         params = {"uid": self.item_id, "since": None}
 
         while True:

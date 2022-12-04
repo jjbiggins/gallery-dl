@@ -49,9 +49,7 @@ bytes_to_intlist = list
 
 
 def intlist_to_bytes(xs):
-    if not xs:
-        return b""
-    return struct.pack("%dB" % len(xs), *xs)
+    return struct.pack("%dB" % len(xs), *xs) if xs else b""
 
 
 def unpad_pkcs7(data):

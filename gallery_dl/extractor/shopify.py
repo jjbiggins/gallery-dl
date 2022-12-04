@@ -110,10 +110,10 @@ class ShopifyCollectionExtractor(ShopifyExtractor):
     )
 
     def metadata(self):
-        return self.request(self.item_url + ".json").json()
+        return self.request(f"{self.item_url}.json").json()
 
     def products(self):
-        url = self.item_url + "/products.json"
+        url = f"{self.item_url}/products.json"
 
         while url:
             response = self.request(url)
@@ -156,6 +156,6 @@ class ShopifyProductExtractor(ShopifyExtractor):
     )
 
     def products(self):
-        product = self.request(self.item_url + ".json").json()["product"]
+        product = self.request(f"{self.item_url}.json").json()["product"]
         del product["image"]
         return (product,)

@@ -25,7 +25,7 @@ class Rule34usExtractor(BooruExtractor):
             r'<li class="([^-"]+)-tag"[^>]*><a href="[^;"]+;q=([^"]+)').findall
 
     def _parse_post(self, post_id):
-        url = "{}/index.php?r=posts/view&id={}".format(self.root, post_id)
+        url = f"{self.root}/index.php?r=posts/view&id={post_id}"
         page = self.request(url).text
         extr = text.extract_from(page)
 
@@ -45,7 +45,7 @@ class Rule34usExtractor(BooruExtractor):
         for tag_type, tag_name in self._find_tags(page):
             tags[tag_type].append(text.unquote(tag_name))
         for key, value in tags.items():
-            post["tags_" + key] = " ".join(value)
+            post[f"tags_{key}"] = " ".join(value)
 
         return post
 
@@ -69,7 +69,7 @@ class Rule34usTagExtractor(Rule34usExtractor):
         return {"search_tags": self.tags}
 
     def posts(self):
-        url = self.root + "/index.php"
+        url = f"{self.root}/index.php"
         params = {
             "r"   : "posts/index",
             "q"   : self.tags,
@@ -89,7 +89,7 @@ class Rule34usTagExtractor(Rule34usExtractor):
 
             if "page" in params:
                 del params["page"]
-            params["q"] = self.tags + " id:<" + post_id
+            params["q"] = f"{self.tags} id:<{post_id}"
 
 
 class Rule34usPostExtractor(Rule34usExtractor):

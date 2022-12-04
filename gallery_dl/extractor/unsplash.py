@@ -139,7 +139,7 @@ class UnsplashImageExtractor(UnsplashExtractor):
     })
 
     def photos(self):
-        url = "{}/napi/photos/{}".format(self.root, self.item)
+        url = f"{self.root}/napi/photos/{self.item}"
         return (self.request(url).json(),)
 
 
@@ -155,7 +155,7 @@ class UnsplashUserExtractor(UnsplashExtractor):
     })
 
     def photos(self):
-        url = "{}/napi/users/{}/photos".format(self.root, self.item)
+        url = f"{self.root}/napi/users/{self.item}/photos"
         params = {"order_by": "latest"}
         return self._pagination(url, params)
 
@@ -172,7 +172,7 @@ class UnsplashFavoriteExtractor(UnsplashExtractor):
     })
 
     def photos(self):
-        url = "{}/napi/users/{}/likes".format(self.root, self.item)
+        url = f"{self.root}/napi/users/{self.item}/likes"
         params = {"order_by": "latest"}
         return self._pagination(url, params)
 
@@ -202,7 +202,7 @@ class UnsplashCollectionExtractor(UnsplashExtractor):
         return {"collection_id": self.item, "collection_title": self.title}
 
     def photos(self):
-        url = "{}/napi/collections/{}/photos".format(self.root, self.item)
+        url = f"{self.root}/napi/collections/{self.item}/photos"
         params = {"order_by": "latest"}
         return self._pagination(url, params)
 
@@ -223,8 +223,8 @@ class UnsplashSearchExtractor(UnsplashExtractor):
         self.query = match.group(2)
 
     def photos(self):
-        url = self.root + "/napi/search/photos"
+        url = f"{self.root}/napi/search/photos"
         params = {"query": text.unquote(self.item.replace('-', ' '))}
         if self.query:
-            params.update(text.parse_query(self.query))
+            params |= text.parse_query(self.query)
         return self._pagination(url, params, True)

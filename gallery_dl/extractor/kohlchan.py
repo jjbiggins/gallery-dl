@@ -30,8 +30,7 @@ class KohlchanThreadExtractor(Extractor):
         self.board, self.thread = match.groups()
 
     def items(self):
-        url = "https://kohlchan.net/{}/res/{}.json".format(
-            self.board, self.thread)
+        url = f"https://kohlchan.net/{self.board}/res/{self.thread}.json"
         thread = self.request(url).json()
         thread["postId"] = thread["threadId"]
         posts = thread.pop("posts")
@@ -39,8 +38,7 @@ class KohlchanThreadExtractor(Extractor):
         yield Message.Directory, thread
 
         for post in itertools.chain((thread,), posts):
-            files = post.pop("files", ())
-            if files:
+            if files := post.pop("files", ()):
                 thread.update(post)
                 for num, file in enumerate(files):
                     file.update(thread)
@@ -70,9 +68,8 @@ class KohlchanBoardExtractor(Extractor):
         self.board = match.group(1)
 
     def items(self):
-        url = "https://kohlchan.net/{}/catalog.json".format(self.board)
+        url = f"https://kohlchan.net/{self.board}/catalog.json"
         for thread in self.request(url).json():
-            url = "https://kohlchan.net/{}/res/{}.html".format(
-                self.board, thread["threadId"])
+            url = f'https://kohlchan.net/{self.board}/res/{thread["threadId"]}.html'
             thread["_extractor"] = KohlchanThreadExtractor
             yield Message.Queue, url, thread

@@ -30,7 +30,7 @@ class _2chenThreadExtractor(Extractor):
         self.board, self.thread = match.groups()
 
     def items(self):
-        url = "{}/{}/{}".format(self.root, self.board, self.thread)
+        url = f"{self.root}/{self.board}/{self.thread}"
         page = self.request(url, encoding="utf-8").text
         data = self.metadata(page)
         yield Message.Directory, data
@@ -91,7 +91,7 @@ class _2chenBoardExtractor(Extractor):
         self.board = match.group(1)
 
     def items(self):
-        url = "{}/{}/catalog".format(self.root, self.board)
+        url = f"{self.root}/{self.board}/catalog"
         page = self.request(url).text
         data = {"_extractor": _2chenThreadExtractor}
         for thread in text.extract_iter(

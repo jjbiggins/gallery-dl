@@ -37,11 +37,11 @@ class SexcomExtractor(Extractor):
             extr = text.extract_from(self.request(url).text)
 
             while True:
-                href = extr('<a class="image_wrapper" href="', '"')
-                if not href:
-                    break
-                yield self.root + href
+                if href := extr('<a class="image_wrapper" href="', '"'):
+                    yield self.root + href
 
+                else:
+                    break
             pager = extr('id="pagenum"', '</div>')
             url = text.extr(pager, ' href="', '"')
             if not url:
@@ -55,10 +55,12 @@ class SexcomExtractor(Extractor):
                              url, response.status_code, response.reason)
             return None
         extr = text.extract_from(response.text)
-        data = {}
+        data = {
+            "_http_headers": {"Referer": url},
+            "thumbnail": extr('itemprop="thumbnail" content="', '"'),
+        }
 
-        data["_http_headers"] = {"Referer": url}
-        data["thumbnail"] = extr('itemprop="thumbnail" content="', '"')
+
         data["type"] = extr('<h1>' , '<').rstrip(" -").strip().lower()
         data["title"] = text.unescape(extr('itemprop="name">' , '<'))
         data["repins"] = text.parse_int(text.extract(
@@ -68,9 +70,7 @@ class SexcomExtractor(Extractor):
         data["pin_id"] = text.parse_int(extr('data-id="', '"'))
 
         if data["type"] == "video":
-            info = extr("player.updateSrc(", ");")
-
-            if info:
+            if info := extr("player.updateSrc(", ");"):
                 path = text.extr(info, "src: '", "'")
                 data["filename"] = path.rpartition("/")[2]
                 data["extension"] = "mp4"
@@ -85,7 +85,7 @@ class SexcomExtractor(Extractor):
                     self.log.warning("Unable to fetch media from %s", url)
                     return None
                 data["extension"] = None
-                data["url"] = "ytdl:" + src
+                data["url"] = f"ytdl:{src}"
         else:
             data["_http_validate"] = _check_empty
             url = text.unescape(extr(' src="', '"'))
@@ -148,7 +148,7 @@ class SexcomPinExtractor(SexcomExtractor):
         self.pin_id = match.group(1)
 
     def pins(self):
-        return ("{}/pin/{}/".format(self.root, self.pin_id),)
+        return (f"{self.root}/pin/{self.pin_id}/", )
 
 
 class SexcomRelatedPinExtractor(SexcomPinExtractor):
@@ -165,8 +165,7 @@ class SexcomRelatedPinExtractor(SexcomPinExtractor):
         return {"original_pin": pin}
 
     def pins(self):
-        url = "{}/pin/related?pinId={}&limit=24&offset=0".format(
-            self.root, self.pin_id)
+        url = f"{self.root}/pin/related?pinId={self.pin_id}&limit=24&offset=0"
         return self._pagination(url)
 
 
@@ -187,7 +186,7 @@ class SexcomPinsExtractor(SexcomExtractor):
         return {"user": text.unquote(self.user)}
 
     def pins(self):
-        url = "{}/user/{}/pins/".format(self.root, self.user)
+        url = f"{self.root}/user/{self.user}/pins/"
         return self._pagination(url)
 
 
@@ -212,7 +211,7 @@ class SexcomBoardExtractor(SexcomExtractor):
         }
 
     def pins(self):
-        url = "{}/user/{}/{}/".format(self.root, self.user, self.board)
+        url = f"{self.root}/user/{self.user}/{self.board}/"
         return self._pagination(url)
 
 
@@ -248,7 +247,7 @@ class SexcomSearchExtractor(SexcomExtractor):
         return {"search": self.search}
 
     def pins(self):
-        url = "{}/{}".format(self.root, self.path)
+        url = f"{self.root}/{self.path}"
         return self._pagination(url)
 
 

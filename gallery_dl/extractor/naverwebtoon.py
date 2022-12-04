@@ -54,7 +54,7 @@ class NaverwebtoonEpisodeExtractor(NaverwebtoonBase, GalleryExtractor):
 
     def __init__(self, match):
         path, query = match.groups()
-        url = "{}/{}/detail?{}".format(self.root, path, query)
+        url = f"{self.root}/{path}/detail?{query}"
         GalleryExtractor.__init__(self, match, url)
 
         query = text.parse_query(query)
@@ -111,7 +111,7 @@ class NaverwebtoonComicExtractor(NaverwebtoonBase, Extractor):
         self.page_no = text.parse_int(query.get("page"), 1)
 
     def items(self):
-        url = "{}/{}/list".format(self.root, self.path)
+        url = f"{self.root}/{self.path}/list"
         params = {"titleId": self.title_id, "page": self.page_no}
         data = {"_extractor": NaverwebtoonEpisodeExtractor}
 

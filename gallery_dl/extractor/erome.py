@@ -31,7 +31,7 @@ class EromeExtractor(Extractor):
 
     def items(self):
         for album_id in self.albums():
-            url = "{}/a/{}".format(self.root, album_id)
+            url = f"{self.root}/a/{album_id}"
 
             try:
                 page = self.request(url).text
@@ -55,9 +55,10 @@ class EromeExtractor(Extractor):
             yield Message.Directory, data
             groups = page.split('<div class="media-group"')
             for data["num"], group in enumerate(util.advance(groups, 1), 1):
-                url = (text.extr(group, '<source src="', '"') or
-                       text.extr(group, 'data-src="', '"'))
-                if url:
+                if url := (
+                    text.extr(group, '<source src="', '"')
+                    or text.extr(group, 'data-src="', '"')
+                ):
                     yield Message.Url, url, text.nameext_from_url(url, data)
 
     def albums(self):
@@ -116,7 +117,7 @@ class EromeUserExtractor(EromeExtractor):
     })
 
     def albums(self):
-        url = "{}/{}".format(self.root, self.item)
+        url = f"{self.root}/{self.item}"
         return self._pagination(url, {})
 
 
@@ -129,7 +130,7 @@ class EromeSearchExtractor(EromeExtractor):
     })
 
     def albums(self):
-        url = self.root + "/search"
+        url = f"{self.root}/search"
         params = {"q": text.unquote(self.item)}
         return self._pagination(url, params)
 

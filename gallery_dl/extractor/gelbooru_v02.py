@@ -34,7 +34,7 @@ class GelbooruV02Extractor(booru.BooruExtractor):
             self._tags = self._tags_realbooru
 
     def _api_request(self, params):
-        url = self.api_root + "/index.php?page=dapi&s=post&q=index"
+        url = f"{self.api_root}/index.php?page=dapi&s=post&q=index"
         return ElementTree.fromstring(self.request(url, params=params).text)
 
     def _pagination(self, params):
@@ -64,7 +64,7 @@ class GelbooruV02Extractor(booru.BooruExtractor):
             params["pid"] += 1
 
     def _pagination_html(self, params):
-        url = self.root + "/index.php"
+        url = f"{self.root}/index.php"
         params["pid"] = self.page_start * self.per_page
 
         data = {}
@@ -87,8 +87,9 @@ class GelbooruV02Extractor(booru.BooruExtractor):
             post["created_at"], "%a %b %d %H:%M:%S %z %Y")
 
     def _html(self, post):
-        return self.request("{}/index.php?page=post&s=view&id={}".format(
-            self.root, post["id"])).text
+        return self.request(
+            f'{self.root}/index.php?page=post&s=view&id={post["id"]}'
+        ).text
 
     def _tags(self, post, page):
         tag_container = (text.extr(page, '<ul id="tag-', '</ul>') or
@@ -102,7 +103,7 @@ class GelbooruV02Extractor(booru.BooruExtractor):
         for tag_type, tag_name in pattern.findall(tag_container):
             tags[tag_type].append(text.unquote(tag_name))
         for key, value in tags.items():
-            post["tags_" + key] = " ".join(value)
+            post[f"tags_{key}"] = " ".join(value)
 
     def _notes(self, post, page):
         note_container = text.extr(page, 'id="note-container"', "<img ")
@@ -125,8 +126,7 @@ class GelbooruV02Extractor(booru.BooruExtractor):
         url = post["file_url"]
         md5 = post["md5"]
         if md5 not in post["preview_url"] or url.count("/") == 5:
-            url = "{}/images/{}/{}/{}.{}".format(
-                self.root, md5[0:2], md5[2:4], md5, url.rpartition(".")[2])
+            url = f'{self.root}/images/{md5[:2]}/{md5[2:4]}/{md5}.{url.rpartition(".")[2]}'
         return url
 
     def _tags_realbooru(self, post, page):
@@ -137,7 +137,7 @@ class GelbooruV02Extractor(booru.BooruExtractor):
         for tag_type, tag_name in pattern.findall(tag_container):
             tags[tag_type].append(text.unquote(tag_name))
         for key, value in tags.items():
-            post["tags_" + key] = " ".join(value)
+            post[f"tags_{key}"] = " ".join(value)
 
 
 INSTANCES = {
@@ -241,8 +241,7 @@ class GelbooruV02PoolExtractor(GelbooruV02Extractor):
         return num
 
     def metadata(self):
-        url = "{}/index.php?page=pool&s=show&id={}".format(
-            self.root, self.pool_id)
+        url = f"{self.root}/index.php?page=pool&s=show&id={self.pool_id}"
         page = self.request(url).text
 
         name, pos = text.extract(page, "<h4>Pool: ", "</h4>")

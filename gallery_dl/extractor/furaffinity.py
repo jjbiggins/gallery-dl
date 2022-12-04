@@ -33,10 +33,7 @@ class FuraffinityExtractor(Extractor):
             self._process_description = str.strip
 
         layout = self.config("layout")
-        if layout and layout != "auto":
-            self._new_layout = False if layout == "old" else True
-        else:
-            self._new_layout = None
+        self._new_layout = layout != "old" if layout and layout != "auto" else None
 
     def items(self):
 
@@ -48,8 +45,7 @@ class FuraffinityExtractor(Extractor):
         external = self.config("external", False)
         metadata = self.metadata()
         for post_id in util.advance(self.posts(), self.offset):
-            post = self._parse_post(post_id)
-            if post:
+            if post := self._parse_post(post_id):
                 if metadata:
                     post.update(metadata)
                 yield Message.Directory, post
@@ -58,7 +54,7 @@ class FuraffinityExtractor(Extractor):
                 if external:
                     for url in text.extract_iter(
                             post["_description"], 'href="http', '"'):
-                        yield Message.Queue, "http" + url, post
+                        yield (Message.Queue, f"http{url}", post)
 
     def metadata(self):
         return None
@@ -68,7 +64,7 @@ class FuraffinityExtractor(Extractor):
         return num
 
     def _parse_post(self, post_id):
-        url = "{}/view/{}/".format(self.root, post_id)
+        url = f"{self.root}/view/{post_id}/"
         extr = text.extract_from(self.request(url).text)
 
         if self._new_layout is None:
@@ -88,10 +84,10 @@ class FuraffinityExtractor(Extractor):
         pi = text.parse_int
         rh = text.remove_html
 
-        data = text.nameext_from_url(path, {
-            "id" : pi(post_id),
-            "url": "https://d" + path,
-        })
+        data = text.nameext_from_url(
+            path, {"id": pi(post_id), "url": f"https://d{path}"}
+        )
+
 
         if self._new_layout:
             data["tags"] = text.split_html(extr(
@@ -142,20 +138,17 @@ class FuraffinityExtractor(Extractor):
         num = 1
 
         while True:
-            url = "{}/{}/{}/{}/".format(
-                self.root, path, self.user, num)
+            url = f"{self.root}/{path}/{self.user}/{num}/"
             page = self.request(url).text
             post_id = None
 
-            for post_id in text.extract_iter(page, 'id="sid-', '"'):
-                yield post_id
-
+            yield from text.extract_iter(page, 'id="sid-', '"')
             if not post_id:
                 return
             num += 1
 
     def _pagination_favorites(self):
-        path = "/favorites/{}/".format(self.user)
+        path = f"/favorites/{self.user}/"
 
         while path:
             page = self.request(self.root + path).text
@@ -163,7 +156,7 @@ class FuraffinityExtractor(Extractor):
             path = text.extr(page, 'right" href="', '"')
 
     def _pagination_search(self, query):
-        url = self.root + "/search/"
+        url = f"{self.root}/search/"
         data = {
             "page"           : 1,
             "order-by"       : "relevancy",
@@ -183,17 +176,15 @@ class FuraffinityExtractor(Extractor):
             "mode"           : "extended",
         }
 
-        data.update(query)
+        data |= query
         if "page" in query:
             data["page"] = text.parse_int(query["page"])
 
+        post_id = None
+
         while True:
             page = self.request(url, method="POST", data=data).text
-            post_id = None
-
-            for post_id in text.extract_iter(page, 'id="sid-', '"'):
-                yield post_id
-
+            yield from text.extract_iter(page, 'id="sid-', '"')
             if not post_id:
                 return
 
@@ -387,7 +378,7 @@ class FuraffinityFollowingExtractor(FuraffinityExtractor):
     })
 
     def items(self):
-        url = "{}/watchlist/by/{}/".format(self.root, self.user)
+        url = f"{self.root}/watchlist/by/{self.user}/"
         data = {"_extractor": FuraffinityUserExtractor}
 
         while True:

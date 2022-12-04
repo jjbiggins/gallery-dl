@@ -56,8 +56,7 @@ class MetadataPP(PostProcessor):
             self.ascii = options.get("ascii", False)
             ext = "json"
 
-        directory = options.get("directory")
-        if directory:
+        if directory := options.get("directory"):
             self._directory = self._directory_custom
             sep = os.sep + (os.altsep or "")
             self._metadir = util.expand_path(directory).rstrip(sep) + os.sep
@@ -83,13 +82,13 @@ class MetadataPP(PostProcessor):
             events = events.split(",")
         job.register_hooks({event: self.run for event in events}, options)
 
-        archive = options.get("archive")
-        if archive:
+        if archive := options.get("archive"):
             extr = job.extractor
             archive = util.expand_path(archive)
-            archive_format = (
-                options.get("archive-prefix", extr.category) +
-                options.get("archive-format", "_MD_" + extr.archive_fmt))
+            archive_format = options.get(
+                "archive-prefix", extr.category
+            ) + options.get("archive-format", f"_MD_{extr.archive_fmt}")
+
             try:
                 if "{" in archive:
                     archive = formatter.parse(archive).format_map(
@@ -130,8 +129,7 @@ class MetadataPP(PostProcessor):
             archive.add(pathfmt.kwdict)
 
         if self.mtime:
-            mtime = pathfmt.kwdict.get("_mtime")
-            if mtime:
+            if mtime := pathfmt.kwdict.get("_mtime"):
                 util.set_mtime(path, mtime)
 
     def _run_stdout(self, pathfmt):

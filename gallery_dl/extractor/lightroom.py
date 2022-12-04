@@ -44,7 +44,7 @@ class LightroomGalleryExtractor(Extractor):
 
     def items(self):
         # Get config
-        url = "https://lightroom.adobe.com/shares/" + self.href
+        url = f"https://lightroom.adobe.com/shares/{self.href}"
         response = self.request(url)
         album = json.loads(
             text.extr(response.text, "albumAttributes: ", "\n")
@@ -94,7 +94,7 @@ class LightroomGalleryExtractor(Extractor):
                         "num": num,
                         "url": base_url + img_url,
                     }
-                    img.update(album_md)
+                    img |= album_md
                     yield img
                     num += 1
             try:

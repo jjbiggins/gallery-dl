@@ -87,12 +87,14 @@ class _35photoExtractor(Extractor):
     def _photo_ids(page):
         """Extract unique photo IDs and return them as sorted list"""
         #  searching for photo-id="..." doesn't always work (see unit tests)
-        if not page:
-            return ()
-        return sorted(
-            set(text.extract_iter(page, "/photo_", "/")),
-            key=text.parse_int,
-            reverse=True,
+        return (
+            sorted(
+                set(text.extract_iter(page, "/photo_", "/")),
+                key=text.parse_int,
+                reverse=True,
+            )
+            if page
+            else ()
         )
 
 
@@ -122,7 +124,7 @@ class _35photoUserExtractor(_35photoExtractor):
         self.user_id = 0
 
     def metadata(self):
-        url = "{}/{}/".format(self.root, self.user)
+        url = f"{self.root}/{self.user}/"
         page = self.request(url).text
         self.user_id = text.parse_int(text.extr(page, "/user_", ".xml"))
         return {
@@ -159,15 +161,14 @@ class _35photoTagExtractor(_35photoExtractor):
         num = 1
 
         while True:
-            url = "{}/tags/{}/list_{}/".format(self.root, self.tag, num)
+            url = f"{self.root}/tags/{self.tag}/list_{num}/"
             page = self.request(url).text
             prev = None
 
             for photo_id in text.extract_iter(page, "35photo.pro/photo_", "/"):
                 if photo_id != prev:
                     prev = photo_id
-                    yield photo_id
-
+                    yield prev
             if not prev:
                 return
             num += 1
@@ -187,7 +188,7 @@ class _35photoGenreExtractor(_35photoExtractor):
         self.photo_ids = None
 
     def metadata(self):
-        url = "{}/genre_{}{}".format(self.root, self.genre_id, self.new or "/")
+        url = f'{self.root}/genre_{self.genre_id}{self.new or "/"}'
         page = self.request(url).text
         self.photo_ids = self._photo_ids(text.extr(
             page, ' class="photo', '\n'))
@@ -197,14 +198,19 @@ class _35photoGenreExtractor(_35photoExtractor):
         }
 
     def photos(self):
-        if not self.photo_ids:
-            return ()
-        return self._pagination({
-            "page": "genre",
-            "community_id": self.genre_id,
-            "photo_rating": "0" if self.new else "50",
-            "lastId": self.photo_ids[-1],
-        }, self.photo_ids)
+        return (
+            self._pagination(
+                {
+                    "page": "genre",
+                    "community_id": self.genre_id,
+                    "photo_rating": "0" if self.new else "50",
+                    "lastId": self.photo_ids[-1],
+                },
+                self.photo_ids,
+            )
+            if self.photo_ids
+            else ()
+        )
 
 
 class _35photoImageExtractor(_35photoExtractor):

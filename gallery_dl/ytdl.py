@@ -27,14 +27,12 @@ def construct_YoutubeDL(module, obj, user_opts, system_opts=None):
     opts = argv = None
     config = obj.config
 
-    cfg = config("config-file")
-    if cfg:
+    if cfg := config("config-file"):
         with open(util.expand_path(cfg)) as fp:
             contents = fp.read()
         argv = shlex.split(contents, comments=True)
 
-    cmd = config("cmdline-args")
-    if cmd:
+    if cmd := config("cmdline-args"):
         if isinstance(cmd, str):
             cmd = shlex.split(cmd)
         argv = (argv + cmd) if argv else cmd
@@ -57,8 +55,7 @@ def construct_YoutubeDL(module, obj, user_opts, system_opts=None):
     if opts.get("max_filesize") is None:
         opts["max_filesize"] = text.parse_bytes(config("filesize-max"), None)
 
-    raw_opts = config("raw-options")
-    if raw_opts:
+    if raw_opts := config("raw-options"):
         opts.update(raw_opts)
     if config("logging", True):
         opts["logger"] = obj.log
@@ -140,7 +137,7 @@ def parse_command_line(module, argv):
         if name not in compat_opts:
             return False
         compat_opts.discard(name)
-        compat_opts.update(["*%s" % name])
+        compat_opts.update([f"*{name}"])
         return True
 
     def set_default_compat(
@@ -202,7 +199,7 @@ def parse_command_line(module, argv):
         if getattr(opts, "parse_metadata", None) is None:
             opts.parse_metadata = []
         if opts.metafromtitle is not None:
-            opts.parse_metadata.append("title:%s" % opts.metafromtitle)
+            opts.parse_metadata.append(f"title:{opts.metafromtitle}")
             opts.metafromtitle = None
         opts.parse_metadata = list(itertools.chain.from_iterable(map(
             metadataparser_actions, opts.parse_metadata)))
@@ -322,7 +319,7 @@ def parse_command_line(module, argv):
             pp["add_infojson"] = embed_infojson
 
         postprocessors.append(pp)
-    if getattr(opts, "sponskrub", False) is not False:
+    if getattr(opts, "sponskrub", False):
         postprocessors.append({
             "key": "SponSkrub",
             "path": opts.sponskrub_path,
@@ -529,6 +526,4 @@ def parse_command_line(module, argv):
 
 
 def parse_retries(retries, name=""):
-    if retries in ("inf", "infinite"):
-        return float("inf")
-    return int(retries)
+    return float("inf") if retries in ("inf", "infinite") else int(retries)

@@ -161,15 +161,14 @@ class FoolfuukaThreadExtractor(FoolfuukaExtractor):
         self.data = None
 
     def metadata(self):
-        url = self.root + "/_/api/chan/thread/"
+        url = f"{self.root}/_/api/chan/thread/"
         params = {"board": self.board, "num": self.thread}
         self.data = self.request(url, params=params).json()[self.thread]
         return self.data["op"]
 
     def posts(self):
         op = (self.data["op"],)
-        posts = self.data.get("posts")
-        if posts:
+        if posts := self.data.get("posts"):
             posts = list(posts.values())
             posts.sort(key=lambda p: p["timestamp"])
             return itertools.chain(op, posts)
@@ -198,9 +197,8 @@ class FoolfuukaBoardExtractor(FoolfuukaExtractor):
         self.board = match.group(match.lastindex)
 
     def items(self):
-        index_base = "{}/_/api/chan/index/?board={}&page=".format(
-            self.root, self.board)
-        thread_base = "{}/{}/thread/".format(self.root, self.board)
+        index_base = f"{self.root}/_/api/chan/index/?board={self.board}&page="
+        thread_base = f"{self.root}/{self.board}/thread/"
 
         for page in itertools.count(1):
             with self.request(index_base + format(page)) as response:
@@ -258,7 +256,7 @@ class FoolfuukaSearchExtractor(FoolfuukaExtractor):
         return {"search": self.params.get("text", "")}
 
     def posts(self):
-        url = self.root + "/_/api/chan/search/"
+        url = f"{self.root}/_/api/chan/search/"
         params = self.params.copy()
         params["page"] = text.parse_int(params.get("page"), 1)
         if "filter" not in params:
@@ -318,8 +316,7 @@ class FoolfuukaGalleryExtractor(FoolfuukaExtractor):
         return {"board": self.board}
 
     def posts(self):
-        base = "{}/_/api/chan/gallery/?board={}&page=".format(
-            self.root, self.board)
+        base = f"{self.root}/_/api/chan/gallery/?board={self.board}&page="
 
         for page in self.pages:
             with self.request(base + page) as response:

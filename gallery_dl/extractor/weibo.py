@@ -8,6 +8,7 @@
 
 """Extractors for https://www.weibo.com/"""
 
+
 from .common import Extractor, Message
 from .. import text, exception
 from ..cache import cache
@@ -15,7 +16,7 @@ import random
 import json
 
 BASE_PATTERN = r"(?:https?://)?(?:www\.|m\.)?weibo\.c(?:om|n)"
-USER_PATTERN = BASE_PATTERN + r"/(?:(u|n|p(?:rofile)?)/)?([^/?#]+)(?:/home)?"
+USER_PATTERN = f"{BASE_PATTERN}/(?:(u|n|p(?:rofile)?)/)?([^/?#]+)(?:/home)?"
 
 
 class WeiboExtractor(Extractor):
@@ -36,7 +37,7 @@ class WeiboExtractor(Extractor):
         cookies = _cookie_cache()
         if cookies is not None:
             self.session.cookies.update(cookies)
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
 
     def request(self, url, **kwargs):
         response = Extractor.request(self, url, **kwargs)
@@ -80,8 +81,7 @@ class WeiboExtractor(Extractor):
     def _extract_status(self, status, files):
         append = files.append
 
-        pic_ids = status.get("pic_ids")
-        if pic_ids:
+        if pic_ids := status.get("pic_ids"):
             pics = status["pic_infos"]
             for pic_id in pic_ids:
                 pic = pics[pic_id]
@@ -95,7 +95,7 @@ class WeiboExtractor(Extractor):
 
                     file = {"url": pic["video"]}
                     file["filehame"], _, file["extension"] = \
-                        pic["video"].rpartition("%2F")[2].rpartition(".")
+                            pic["video"].rpartition("%2F")[2].rpartition(".")
                     append(file)
 
                 else:
@@ -115,26 +115,24 @@ class WeiboExtractor(Extractor):
                 append(media["play_info"].copy())
 
     def _status_by_id(self, status_id):
-        url = "{}/ajax/statuses/show?id={}".format(self.root, status_id)
+        url = f"{self.root}/ajax/statuses/show?id={status_id}"
         return self.request(url).json()
 
     def _user_id(self):
         if self.user.isdecimal():
             return self.user[-10:]
-        else:
-            url = "{}/ajax/profile/info?{}={}".format(
-                self.root,
-                "screen_name" if self._prefix == "n" else "custom",
-                self.user)
-            return self.request(url).json()["data"]["user"]["idstr"]
+        url = f'{self.root}/ajax/profile/info?{"screen_name" if self._prefix == "n" else "custom"}={self.user}'
+
+        return self.request(url).json()["data"]["user"]["idstr"]
 
     def _pagination(self, endpoint, params):
-        url = self.root + "/ajax" + endpoint
+        url = f"{self.root}/ajax{endpoint}"
         headers = {
             "X-Requested-With": "XMLHttpRequest",
             "X-XSRF-TOKEN": None,
-            "Referer": "{}/u/{}".format(self.root, params["uid"]),
+            "Referer": f'{self.root}/u/{params["uid"]}',
         }
+
 
         while True:
             response = self.request(url, params=params, headers=headers)
@@ -212,14 +210,17 @@ class WeiboUserExtractor(WeiboExtractor):
     )
 
     def items(self):
-        base = "{}/u/{}?tabtype=".format(self.root, self._user_id())
-        return self._dispatch_extractors((
-            (WeiboHomeExtractor    , base + "home"),
-            (WeiboFeedExtractor    , base + "feed"),
-            (WeiboVideosExtractor  , base + "video"),
-            (WeiboNewvideoExtractor, base + "newVideo"),
-            (WeiboAlbumExtractor   , base + "album"),
-        ), ("feed",))
+        base = f"{self.root}/u/{self._user_id()}?tabtype="
+        return self._dispatch_extractors(
+            (
+                (WeiboHomeExtractor, f"{base}home"),
+                (WeiboFeedExtractor, f"{base}feed"),
+                (WeiboVideosExtractor, f"{base}video"),
+                (WeiboNewvideoExtractor, f"{base}newVideo"),
+                (WeiboAlbumExtractor, f"{base}album"),
+            ),
+            ("feed",),
+        )
 
 
 class WeiboHomeExtractor(WeiboExtractor):
