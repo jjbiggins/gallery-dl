@@ -26,8 +26,7 @@ class ImagehostImageExtractor(Extractor):
 
     def __init__(self, match):
         Extractor.__init__(self, match)
-        self.page_url = "http{}://{}".format(
-            "s" if self.https else "", match.group(1))
+        self.page_url = f'http{"s" if self.https else ""}://{match.group(1)}'
         self.token = match.group(2)
 
         if self.params == "simple":
@@ -56,7 +55,7 @@ class ImagehostImageExtractor(Extractor):
         data = text.nameext_from_url(filename, {"token": self.token})
         data.update(self.metadata(page))
         if self.https and url.startswith("http:"):
-            url = "https:" + url[5:]
+            url = f"https:{url[5:]}"
 
         yield Message.Directory, data
         yield Message.Url, url, data

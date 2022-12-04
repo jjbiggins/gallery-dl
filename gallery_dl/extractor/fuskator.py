@@ -37,7 +37,7 @@ class FuskatorGalleryExtractor(GalleryExtractor):
 
     def __init__(self, match):
         self.gallery_hash = match.group(1)
-        url = "{}/thumbs/{}/".format(self.root, self.gallery_hash)
+        url = f"{self.root}/thumbs/{self.gallery_hash}/"
         GalleryExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -46,8 +46,9 @@ class FuskatorGalleryExtractor(GalleryExtractor):
             "X-Requested-With": "XMLHttpRequest",
         }
         auth = self.request(
-            self.root + "/ajax/auth.aspx", method="POST", headers=headers,
+            f"{self.root}/ajax/auth.aspx", method="POST", headers=headers
         ).text
+
 
         params = {
             "X-Auth": auth,
@@ -55,8 +56,9 @@ class FuskatorGalleryExtractor(GalleryExtractor):
             "_"     : int(time.time()),
         }
         self.data = data = self.request(
-            self.root + "/ajax/gal.aspx", params=params, headers=headers,
+            f"{self.root}/ajax/gal.aspx", params=params, headers=headers
         ).json()
+
 
         title = text.extr(page, "<title>", "</title>").strip()
         title, _, gallery_id = title.rpartition("#")
@@ -104,7 +106,7 @@ class FuskatorSearchExtractor(Extractor):
                     page, 'class="pic_pad"><a href="', '"'):
                 yield Message.Queue, self.root + path, data
 
-            pages = text.extr(page, 'class="pages"><span>', '>&gt;&gt;<')
-            if not pages:
+            if pages := text.extr(page, 'class="pages"><span>', '>&gt;&gt;<'):
+                url = self.root + text.rextract(pages, 'href="', '"')[0]
+            else:
                 return
-            url = self.root + text.rextract(pages, 'href="', '"')[0]

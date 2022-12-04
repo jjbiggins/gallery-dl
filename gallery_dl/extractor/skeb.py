@@ -65,8 +65,7 @@ class SkebExtractor(Extractor):
             params["offset"] += 30
 
     def _get_post_data(self, user_name, post_num):
-        url = "{}/api/users/{}/works/{}".format(
-            self.root, user_name, post_num)
+        url = f"{self.root}/api/users/{user_name}/works/{post_num}"
         headers = {"Referer": self.root, "Authorization": "Bearer null"}
         resp = self.request(url, headers=headers).json()
         creator = resp["creator"]
@@ -112,8 +111,7 @@ class SkebExtractor(Extractor):
             yield post
 
         if self.article and "article_image_url" in resp:
-            url = resp["article_image_url"]
-            if url:
+            if url := resp["article_image_url"]:
                 post["content_category"] = "article"
                 post["file_id"] = "article"
                 post["_file_id"] = str(resp["id"]) + "a"
@@ -212,7 +210,7 @@ class SkebUserExtractor(SkebExtractor):
     })
 
     def posts(self):
-        url = "{}/api/users/{}/works".format(self.root, self.user_name)
+        url = f"{self.root}/api/users/{self.user_name}/works"
 
         params = {"role": "creator", "sort": "date"}
         posts = self._pagination(url, params)
@@ -243,10 +241,11 @@ class SkebSearchExtractor(SkebExtractor):
         }
         headers = {
             "Origin": self.root,
-            "Referer": self.root + "/",
+            "Referer": f"{self.root}/",
             "x-algolia-api-key": "9a4ce7d609e71bf29e977925e4c6740c",
             "x-algolia-application-id": "HB1JT3KRE9",
         }
+
 
         filters = self.config("filters")
         if filters is None:
@@ -256,7 +255,7 @@ class SkebSearchExtractor(SkebExtractor):
             filters = " OR ".join(filters)
 
         page = 0
-        pams = "hitsPerPage=40&filters=" + text.quote(filters) + "&page="
+        pams = f"hitsPerPage=40&filters={text.quote(filters)}&page="
 
         request = {
             "indexName": "Request",
@@ -288,13 +287,12 @@ class SkebFollowingExtractor(SkebExtractor):
 
     def items(self):
         for user in self.users():
-            url = "{}/@{}".format(self.root, user["screen_name"])
+            url = f'{self.root}/@{user["screen_name"]}'
             user["_extractor"] = SkebUserExtractor
             yield Message.Queue, url, user
 
     def users(self):
-        url = "{}/api/users/{}/following_creators".format(
-            self.root, self.user_name)
+        url = f"{self.root}/api/users/{self.user_name}/following_creators"
         params = {"sort": "date", "offset": 0, "limit": 90}
         headers = {"Referer": self.root, "Authorization": "Bearer null"}
 

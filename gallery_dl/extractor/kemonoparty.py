@@ -8,6 +8,7 @@
 
 """Extractors for https://kemono.party/"""
 
+
 from .common import Extractor, Message
 from .. import text, exception
 from ..cache import cache
@@ -15,7 +16,7 @@ import itertools
 import re
 
 BASE_PATTERN = r"(?:https?://)?(?:www\.|beta\.)?(kemono|coomer)\.party"
-USER_PATTERN = BASE_PATTERN + r"/([^/?#]+)/user/([^/?#]+)"
+USER_PATTERN = f"{BASE_PATTERN}/([^/?#]+)/user/([^/?#]+)"
 
 
 class KemonopartyExtractor(Extractor):
@@ -33,7 +34,7 @@ class KemonopartyExtractor(Extractor):
             self.cookiedomain = ".coomer.party"
         self.root = text.root_from_url(match.group(0))
         Extractor.__init__(self, match)
-        self.session.headers["Referer"] = self.root + "/"
+        self.session.headers["Referer"] = f"{self.root}/"
 
     def items(self):
         self._prepare_ddosguard_cookies()
@@ -58,14 +59,15 @@ class KemonopartyExtractor(Extractor):
             dms = True
 
         posts = self.posts()
-        max_posts = self.config("max-posts")
-        if max_posts:
+        if max_posts := self.config("max-posts"):
             posts = itertools.islice(posts, max_posts)
 
         for post in posts:
 
-            headers["Referer"] = "{}/{}/user/{}/post/{}".format(
-                self.root, post["service"], post["user"], post["id"])
+            headers[
+                "Referer"
+            ] = f'{self.root}/{post["service"]}/user/{post["user"]}/post/{post["id"]}'
+
             post["_http_headers"] = headers
             post["date"] = text.parse_datetime(
                 post["published"] or post["added"],
@@ -86,8 +88,7 @@ class KemonopartyExtractor(Extractor):
                     g(post) for g in generators):
                 url = file["path"]
 
-                match = find_hash(url)
-                if match:
+                if match := find_hash(url):
                     file["hash"] = hash = match.group(1)
                     if hash in hashes and not duplicates:
                         self.log.debug("Skipping %s (duplicate)", url)
@@ -111,9 +112,9 @@ class KemonopartyExtractor(Extractor):
                     post["extension"] = text.ext_from_url(url)
 
                 if url[0] == "/":
-                    url = self.root + "/data" + url
+                    url = f"{self.root}/data{url}"
                 elif url.startswith(self.root):
-                    url = self.root + "/data" + url[20:]
+                    url = f"{self.root}/data{url[20:]}"
                 yield Message.Url, url, post
 
     def login(self):
@@ -125,12 +126,12 @@ class KemonopartyExtractor(Extractor):
     def _login_impl(self, username, password):
         self.log.info("Logging in as %s", username)
 
-        url = self.root + "/account/login"
+        url = f"{self.root}/account/login"
         data = {"username": username, "password": password}
 
         response = self.request(url, method="POST", data=data)
         if response.url.endswith("/account/login") and \
-                "Username or password is incorrect" in response.text:
+                    "Username or password is incorrect" in response.text:
             raise exception.AuthenticationError()
 
         return {c.name: c.value for c in response.history[0].cookies}
@@ -164,8 +165,7 @@ class KemonopartyExtractor(Extractor):
         return [genmap[ft] for ft in filetypes]
 
     def _extract_comments(self, post):
-        url = "{}/{}/user/{}/post/{}".format(
-            self.root, post["service"], post["user"], post["id"])
+        url = f'{self.root}/{post["service"]}/user/{post["user"]}/post/{post["id"]}'
         page = self.request(url).text
 
         comments = []
@@ -182,19 +182,22 @@ class KemonopartyExtractor(Extractor):
         return comments
 
     def _extract_dms(self, post):
-        url = "{}/{}/user/{}/dms".format(
-            self.root, post["service"], post["user"])
+        url = f'{self.root}/{post["service"]}/user/{post["user"]}/dms'
         page = self.request(url).text
 
-        dms = []
-        for dm in text.extract_iter(page, "<article", "</article>"):
-            dms.append({
-                "body": text.unescape(text.extract(
-                    dm, "<pre>", "</pre></",
-                )[0].strip()),
+        return [
+            {
+                "body": text.unescape(
+                    text.extract(
+                        dm,
+                        "<pre>",
+                        "</pre></",
+                    )[0].strip()
+                ),
                 "date": text.extr(dm, 'datetime="', '"'),
-            })
-        return dms
+            }
+            for dm in text.extract_iter(page, "<article", "</article>")
+        ]
 
 
 class KemonopartyUserExtractor(KemonopartyExtractor):
@@ -218,8 +221,8 @@ class KemonopartyUserExtractor(KemonopartyExtractor):
         _, service, user_id, offset = match.groups()
         self.subcategory = service
         KemonopartyExtractor.__init__(self, match)
-        self.api_url = "{}/api/{}/user/{}".format(self.root, service, user_id)
-        self.user_url = "{}/{}/user/{}".format(self.root, service, user_id)
+        self.api_url = f"{self.root}/api/{service}/user/{user_id}"
+        self.user_url = f"{self.root}/{service}/user/{user_id}"
         self.offset = text.parse_int(offset)
 
     def posts(self):
@@ -318,9 +321,8 @@ class KemonopartyPostExtractor(KemonopartyExtractor):
         _, service, user_id, post_id = match.groups()
         self.subcategory = service
         KemonopartyExtractor.__init__(self, match)
-        self.api_url = "{}/api/{}/user/{}/post/{}".format(
-            self.root, service, user_id, post_id)
-        self.user_url = "{}/{}/user/{}".format(self.root, service, user_id)
+        self.api_url = f"{self.root}/api/{service}/user/{user_id}/post/{post_id}"
+        self.user_url = f"{self.root}/{service}/user/{user_id}"
 
     def posts(self):
         posts = self.request(self.api_url).json()
@@ -369,8 +371,7 @@ class KemonopartyDiscordExtractor(KemonopartyExtractor):
             r"(/[A-Za-z0-9-._~:/?#\[\]@!$&'()*+,;%=]+)").findall
 
         posts = self.posts()
-        max_posts = self.config("max-posts")
-        if max_posts:
+        if max_posts := self.config("max-posts"):
             posts = itertools.islice(posts, max_posts)
 
         for post in posts:
@@ -380,8 +381,14 @@ class KemonopartyDiscordExtractor(KemonopartyExtractor):
                 attachment["type"] = "attachment"
                 append(attachment)
             for path in find_inline(post["content"] or ""):
-                append({"path": "https://cdn.discordapp.com" + path,
-                        "name": path, "type": "inline"})
+                append(
+                    {
+                        "path": f"https://cdn.discordapp.com{path}",
+                        "name": path,
+                        "type": "inline",
+                    }
+                )
+
 
             post["channel_name"] = self.channel_name
             post["date"] = text.parse_datetime(
@@ -398,15 +405,14 @@ class KemonopartyDiscordExtractor(KemonopartyExtractor):
                     post["extension"] = text.ext_from_url(url)
 
                 if url[0] == "/":
-                    url = self.root + "/data" + url
+                    url = f"{self.root}/data{url}"
                 elif url.startswith(self.root):
-                    url = self.root + "/data" + url[20:]
+                    url = f"{self.root}/data{url[20:]}"
                 yield Message.Url, url, post
 
     def posts(self):
         if self.channel is None:
-            url = "{}/api/discord/channels/lookup?q={}".format(
-                self.root, self.server)
+            url = f"{self.root}/api/discord/channels/lookup?q={self.server}"
             for channel in self.request(url).json():
                 if channel["name"] == self.channel_name:
                     self.channel = channel["id"]
@@ -414,7 +420,7 @@ class KemonopartyDiscordExtractor(KemonopartyExtractor):
             else:
                 raise exception.NotFoundError("channel")
 
-        url = "{}/api/discord/channel/{}".format(self.root, self.channel)
+        url = f"{self.root}/api/discord/channel/{self.channel}"
         params = {"skip": 0}
 
         while True:
@@ -440,13 +446,12 @@ class KemonopartyDiscordServerExtractor(KemonopartyExtractor):
         self.server = match.group(2)
 
     def items(self):
-        url = "{}/api/discord/channels/lookup?q={}".format(
-            self.root, self.server)
+        url = f"{self.root}/api/discord/channels/lookup?q={self.server}"
         channels = self.request(url).json()
 
         for channel in channels:
-            url = "{}/discord/server/{}/channel/{}#{}".format(
-                self.root, self.server, channel["id"], channel["name"])
+            url = f'{self.root}/discord/server/{self.server}/channel/{channel["id"]}#{channel["name"]}'
+
             channel["_extractor"] = KemonopartyDiscordExtractor
             yield Message.Queue, url, channel
 
@@ -479,19 +484,15 @@ class KemonopartyFavoriteExtractor(KemonopartyExtractor):
         self.login()
 
         if self.favorites == "artist":
-            users = self.request(
-                self.root + "/api/favorites?type=artist").json()
+            users = self.request(f"{self.root}/api/favorites?type=artist").json()
             for user in users:
                 user["_extractor"] = KemonopartyUserExtractor
-                url = "{}/{}/user/{}".format(
-                    self.root, user["service"], user["id"])
+                url = f'{self.root}/{user["service"]}/user/{user["id"]}'
                 yield Message.Queue, url, user
 
         elif self.favorites == "post":
-            posts = self.request(
-                self.root + "/api/favorites?type=post").json()
+            posts = self.request(f"{self.root}/api/favorites?type=post").json()
             for post in posts:
                 post["_extractor"] = KemonopartyPostExtractor
-                url = "{}/{}/user/{}/post/{}".format(
-                    self.root, post["service"], post["user"], post["id"])
+                url = f'{self.root}/{post["service"]}/user/{post["user"]}/post/{post["id"]}'
                 yield Message.Queue, url, post

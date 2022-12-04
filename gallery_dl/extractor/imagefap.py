@@ -58,7 +58,7 @@ class ImagefapGalleryExtractor(ImagefapExtractor):
         self.image_id = ""
 
     def items(self):
-        url = "{}/pictures/{}/".format(self.root, self.gid)
+        url = f"{self.root}/pictures/{self.gid}/"
         page = self.request(url).text
         data = self.get_job_metadata(page)
         yield Message.Directory, data
@@ -86,13 +86,14 @@ class ImagefapGalleryExtractor(ImagefapExtractor):
 
     def get_images(self):
         """Collect image-urls and -metadata"""
-        url = "{}/photo/{}/".format(self.root, self.image_id)
+        url = f"{self.root}/photo/{self.image_id}/"
         params = {"gid": self.gid, "idx": 0, "partial": "true"}
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "X-Requested-With": "XMLHttpRequest",
-            "Referer": "{}?pgid=&gid={}&page=0".format(url, self.image_id)
+            "Referer": f"{url}?pgid=&gid={self.image_id}&page=0",
         }
+
 
         num = 0
         total = self._count
@@ -136,7 +137,7 @@ class ImagefapImageExtractor(ImagefapExtractor):
         yield Message.Url, url, data
 
     def get_image(self):
-        url = "{}/photo/{}/".format(self.root, self.image_id)
+        url = f"{self.root}/photo/{self.image_id}/"
         page = self.request(url).text
 
         info, pos = text.extract(
@@ -184,7 +185,7 @@ class ImagefapUserExtractor(ImagefapExtractor):
     def items(self):
         for folder_id in self.folders():
             for gallery_id, name in self.galleries(folder_id):
-                url = "{}/gallery/{}".format(self.root, gallery_id)
+                url = f"{self.root}/gallery/{gallery_id}"
                 data = {
                     "gallery_id": text.parse_int(gallery_id),
                     "title"     : text.unescape(name),
@@ -195,10 +196,9 @@ class ImagefapUserExtractor(ImagefapExtractor):
     def folders(self):
         """Return a list of folder_ids of a specific user"""
         if self.user:
-            url = "{}/profile/{}/galleries".format(self.root, self.user)
+            url = f"{self.root}/profile/{self.user}/galleries"
         else:
-            url = "{}/usergallery.php?userid={}".format(
-                self.root, self.user_id)
+            url = f"{self.root}/usergallery.php?userid={self.user_id}"
 
         response = self.request(url)
         self.user = response.url.split("/")[-2]
@@ -208,10 +208,9 @@ class ImagefapUserExtractor(ImagefapExtractor):
     def galleries(self, folder_id):
         """Yield gallery_ids of a folder"""
         if folder_id == "-1":
-            url = "{}/profile/{}/galleries?folderid=-1".format(
-                self.root, self.user)
+            url = f"{self.root}/profile/{self.user}/galleries?folderid=-1"
         else:
-            url = "{}/organizer/{}/".format(self.root, folder_id)
+            url = f"{self.root}/organizer/{folder_id}/"
         params = {"page": 0}
 
         while True:

@@ -157,7 +157,7 @@ class TestCookieUtils(unittest.TestCase):
         extr._cookiejar.set("a", "1", domain=extr.cookiedomain)
         self.assertTrue(extr._check_cookies(("a",)))
 
-        extr._cookiejar.set("a", "1", domain="www" + extr.cookiedomain)
+        extr._cookiejar.set("a", "1", domain=f"www{extr.cookiedomain}")
         self.assertEqual(len(extr._cookiejar), 3)
         self.assertTrue(extr._check_cookies(("a",)))
 

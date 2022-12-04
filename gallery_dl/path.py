@@ -72,8 +72,8 @@ class PathFormat():
 
         self.kwdict = {}
         self.directory = self.realdirectory = \
-            self.filename = self.extension = self.prefix = \
-            self.path = self.realpath = self.temppath = ""
+                self.filename = self.extension = self.prefix = \
+                self.path = self.realpath = self.temppath = ""
         self.delete = False
 
         extension_map = config("extension-map")
@@ -113,7 +113,7 @@ class PathFormat():
             basedir = config("base-directory")
             sep = os.sep
             if basedir is None:
-                basedir = "." + sep + "gallery-dl" + sep
+                basedir = f".{sep}gallery-dl{sep}"
             elif basedir:
                 basedir = util.expand_path(basedir)
                 altsep = os.altsep
@@ -135,8 +135,7 @@ class PathFormat():
             def func(x, c=chars, r=repl):
                 return x.replace(c, r)
         else:
-            return functools.partial(
-                re.compile("[" + chars + "]").sub, repl)
+            return functools.partial(re.compile(f"[{chars}]").sub, repl)
         return func
 
     def open(self, mode="wb"):
@@ -161,7 +160,7 @@ class PathFormat():
         num = 1
         try:
             while True:
-                prefix = format(num) + "."
+                prefix = f"{format(num)}."
                 self.kwdict["extension"] = prefix + self.extension
                 self.build_path()
                 os.stat(self.realpath)  # raises OSError if file doesn't exist
@@ -176,8 +175,7 @@ class PathFormat():
         self.kwdict = kwdict
         sep = os.sep
 
-        segments = self.build_directory(kwdict)
-        if segments:
+        if segments := self.build_directory(kwdict):
             self.directory = directory = self.basedirectory + self.clean_path(
                 sep.join(segments) + sep)
         else:
@@ -332,6 +330,5 @@ class PathFormat():
                     os.unlink(self.temppath)
                 break
 
-        mtime = self.kwdict.get("_mtime")
-        if mtime:
+        if mtime := self.kwdict.get("_mtime"):
             util.set_mtime(self.realpath, mtime)

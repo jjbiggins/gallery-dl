@@ -24,9 +24,10 @@ if len(sys.argv) <= 1:
     ]
 else:
     TESTS = [
-        name if name.startswith("test_") else "test_" + name
+        name if name.startswith("test_") else f"test_{name}"
         for name in sys.argv[1:]
     ]
+
 
 
 suite = unittest.TestSuite()

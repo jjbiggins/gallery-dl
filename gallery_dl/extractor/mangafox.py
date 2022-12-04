@@ -33,8 +33,8 @@ class MangafoxChapterExtractor(ChapterExtractor):
     def __init__(self, match):
         base, self.cstr, self.volume, self.chapter, self.minor = match.groups()
         self.urlbase = self.root + base
-        ChapterExtractor.__init__(self, match, self.urlbase + "/1.html")
-        self.session.headers["Referer"] = self.root + "/"
+        ChapterExtractor.__init__(self, match, f"{self.urlbase}/1.html")
+        self.session.headers["Referer"] = f"{self.root}/"
 
     def metadata(self, page):
         manga, pos = text.extract(page, "<title>", "</title>")
@@ -63,7 +63,7 @@ class MangafoxChapterExtractor(ChapterExtractor):
             yield text.ensure_http_scheme(url), None
 
             pnum += 2
-            page = self.request("{}/{}.html".format(self.urlbase, pnum)).text
+            page = self.request(f"{self.urlbase}/{pnum}.html").text
 
 
 class MangafoxMangaExtractor(MangaExtractor):
@@ -104,15 +104,14 @@ class MangafoxMangaExtractor(MangaExtractor):
             info, pos = text.extract(page, '>', '<span', pos)
             date, pos = text.extract(page, 'right">', '</span>', pos)
 
-            match = match_info(text.unescape(info))
-            if match:
+            if match := match_info(text.unescape(info)):
                 chapter, minor, title = match.groups()
                 chapter_minor = minor
             else:
                 chapter, _, minor = url[:-7].rpartition("/c")[2].partition(".")
-                chapter_minor = "." + minor
+                chapter_minor = f".{minor}"
 
             data["chapter"] = text.parse_int(chapter)
             data["chapter_minor"] = chapter_minor if minor else ""
             data["date"] = date
-            results.append(("https://" + url, data.copy()))
+            results.append((f"https://{url}", data.copy()))

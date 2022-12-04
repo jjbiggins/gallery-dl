@@ -38,7 +38,7 @@ class ZerochanExtractor(BooruExtractor):
     def _login_impl(self, username, password):
         self.log.info("Logging in as %s", username)
 
-        url = self.root + "/login"
+        url = f"{self.root}/login"
         headers = {
             "Origin"  : self.root,
             "Referer" : url,
@@ -57,7 +57,7 @@ class ZerochanExtractor(BooruExtractor):
         return response.cookies
 
     def _parse_entry_html(self, entry_id):
-        url = "{}/{}".format(self.root, entry_id)
+        url = f"{self.root}/{entry_id}"
         extr = text.extract_from(self.request(url).text)
 
         return {
@@ -75,7 +75,7 @@ class ZerochanExtractor(BooruExtractor):
         }
 
     def _parse_entry_xml(self, entry_id):
-        url = "{}/{}?xml".format(self.root, entry_id)
+        url = f"{self.root}/{entry_id}?xml"
         item = ElementTree.fromstring(self.request(url).text)[0][-1]
         #  content = item[4].attrib
 
@@ -120,7 +120,7 @@ class ZerochanTagExtractor(ZerochanExtractor):
             self.search_tag.replace("+", " "))}
 
     def posts(self):
-        url = self.root + "/" + self.search_tag
+        url = f"{self.root}/{self.search_tag}"
         params = text.parse_query(self.query)
         params["p"] = text.parse_int(params.get("p"), 1)
         metadata = self.config("metadata")

@@ -74,8 +74,7 @@ class YoutubeDLDownloader(DownloaderBase):
             else:
                 info_dict = info_dict["entries"][index]
 
-        extra = kwdict.get("_ytdl_extra")
-        if extra:
+        if extra := kwdict.get("_ytdl_extra"):
             info_dict.update(extra)
 
         return self._download_video(ytdl_instance, pathfmt, info_dict)

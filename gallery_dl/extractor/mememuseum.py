@@ -62,7 +62,7 @@ class MememuseumTagExtractor(MememuseumExtractor):
     def posts(self):
         pnum = 1
         while True:
-            url = "{}/post/list/{}/{}".format(self.root, self.tags, pnum)
+            url = f"{self.root}/post/list/{self.tags}/{pnum}"
             extr = text.extract_from(self.request(url).text)
 
             while True:
@@ -76,13 +76,15 @@ class MememuseumTagExtractor(MememuseumExtractor):
                 width, _, height = dimensions.partition("x")
 
                 yield {
-                    "file_url": "{}/_images/{}/{}%20-%20{}.{}".format(
-                        self.root, md5, pid, text.quote(tags),
-                        mime.rpartition("/")[2]),
-                    "id": pid, "md5": md5, "tags": tags,
-                    "width": width, "height": height,
+                    "file_url": f'{self.root}/_images/{md5}/{pid}%20-%20{text.quote(tags)}.{mime.rpartition("/")[2]}',
+                    "id": pid,
+                    "md5": md5,
+                    "tags": tags,
+                    "width": width,
+                    "height": height,
                     "size": text.parse_bytes(size[:-1]),
                 }
+
 
             if not extr(">Next<", ">"):
                 return
@@ -106,7 +108,7 @@ class MememuseumPostExtractor(MememuseumExtractor):
         self.post_id = match.group(1)
 
     def posts(self):
-        url = "{}/post/view/{}".format(self.root, self.post_id)
+        url = f"{self.root}/post/view/{self.post_id}"
         extr = text.extract_from(self.request(url).text)
 
         return ({

@@ -29,8 +29,7 @@ class _420chanThreadExtractor(Extractor):
         self.board, self.thread = match.groups()
 
     def items(self):
-        url = "https://api.420chan.org/{}/res/{}.json".format(
-            self.board, self.thread)
+        url = f"https://api.420chan.org/{self.board}/res/{self.thread}.json"
         posts = self.request(url).json()["posts"]
 
         data = {
@@ -44,8 +43,8 @@ class _420chanThreadExtractor(Extractor):
             if "filename" in post:
                 post.update(data)
                 post["extension"] = post["ext"][1:]
-                url = "https://boards.420chan.org/{}/src/{}{}".format(
-                    post["board"], post["filename"], post["ext"])
+                url = f'https://boards.420chan.org/{post["board"]}/src/{post["filename"]}{post["ext"]}'
+
                 yield Message.Url, url, post
 
 
@@ -64,13 +63,12 @@ class _420chanBoardExtractor(Extractor):
         self.board = match.group(1)
 
     def items(self):
-        url = "https://api.420chan.org/{}/threads.json".format(self.board)
+        url = f"https://api.420chan.org/{self.board}/threads.json"
         threads = self.request(url).json()
 
         for page in threads:
             for thread in page["threads"]:
-                url = "https://boards.420chan.org/{}/thread/{}/".format(
-                    self.board, thread["no"])
+                url = f'https://boards.420chan.org/{self.board}/thread/{thread["no"]}/'
                 thread["page"] = page["page"]
                 thread["_extractor"] = _420chanThreadExtractor
                 yield Message.Queue, url, thread

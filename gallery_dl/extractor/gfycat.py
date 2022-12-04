@@ -54,11 +54,11 @@ class GfycatExtractor(Extractor):
 
     def _formats(self, gfycat):
         for fmt in self.formats:
-            key = fmt + "Url"
+            key = f"{fmt}Url"
             if key in gfycat:
                 url = gfycat[key]
                 if url.startswith("http:"):
-                    url = "https" + url[4:]
+                    url = f"https{url[4:]}"
                 gfycat["extension"] = url.rpartition(".")[2]
                 yield url
 
@@ -122,8 +122,8 @@ class GfycatCollectionsExtractor(GfycatExtractor):
 
     def items(self):
         for col in GfycatAPI(self).collections(self.key):
-            url = "https://gfycat.com/@{}/collections/{}/{}".format(
-                col["userId"], col["folderId"], col["linkText"])
+            url = f'https://gfycat.com/@{col["userId"]}/collections/{col["folderId"]}/{col["linkText"]}'
+
             col["_extractor"] = GfycatCollectionExtractor
             yield Message.Queue, url, col
 
@@ -198,7 +198,7 @@ class GfycatImageExtractor(GfycatExtractor):
             gfycat = GfycatAPI(self).gfycat(self.key)
         except exception.HttpError:
             from .redgifs import RedgifsImageExtractor
-            url = "https://redgifs.com/watch/" + self.key
+            url = f"https://redgifs.com/watch/{self.key}"
             data = {"_extractor": RedgifsImageExtractor}
             yield Message.Queue, url, data
         else:
@@ -221,22 +221,21 @@ class GfycatAPI():
         self.extractor = extractor
 
     def gfycat(self, gfycat_id):
-        endpoint = "/v1/gfycats/" + gfycat_id
+        endpoint = f"/v1/gfycats/{gfycat_id}"
         return self._call(endpoint)["gfyItem"]
 
     def user(self, user):
-        endpoint = "/v1/users/{}/gfycats".format(user.lower())
+        endpoint = f"/v1/users/{user.lower()}/gfycats"
         params = {"count": 100}
         return self._pagination(endpoint, params)
 
     def collection(self, user, collection):
-        endpoint = "/v1/users/{}/collections/{}/gfycats".format(
-            user, collection)
+        endpoint = f"/v1/users/{user}/collections/{collection}/gfycats"
         params = {"count": 100}
         return self._pagination(endpoint, params)
 
     def collections(self, user):
-        endpoint = "/v1/users/{}/collections".format(user)
+        endpoint = f"/v1/users/{user}/collections"
         params = {"count": 100}
         return self._pagination(endpoint, params, "gfyCollections")
 

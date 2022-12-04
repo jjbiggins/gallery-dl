@@ -36,9 +36,8 @@ class TumblrExtractor(Extractor):
     def __init__(self, match):
         Extractor.__init__(self, match)
 
-        name = match.group(2)
-        if name:
-            self.blog = name + ".tumblr.com"
+        if name := match.group(2):
+            self.blog = f"{name}.tumblr.com"
         else:
             self.blog = match.group(1) or match.group(3)
 
@@ -134,8 +133,7 @@ class TumblrExtractor(Extractor):
             if url and url.startswith("https://a.tumblr.com/"):
                 posts.append(self._prepare(url, post.copy()))
 
-            url = post.get("video_url")  # type "video"
-            if url:
+            if url := post.get("video_url"):
                 posts.append(self._prepare(
                     self._original_video(url), post.copy()))
 
@@ -155,8 +153,7 @@ class TumblrExtractor(Extractor):
                     posts.append(self._prepare(url, post.copy()))
 
             if self.external:  # external links
-                url = post.get("permalink_url") or post.get("url")
-                if url:
+                if url := post.get("permalink_url") or post.get("url"):
                     post["extension"] = None
                     posts.append((Message.Queue, url, post.copy()))
                     del post["extension"]
@@ -186,8 +183,7 @@ class TumblrExtractor(Extractor):
                 types = types.split(",")
             types = frozenset(types)
 
-            invalid = types - POST_TYPES
-            if invalid:
+            if invalid := types - POST_TYPES:
                 types = types & POST_TYPES
                 self.log.warning("Invalid post types: '%s'",
                                  "', '".join(sorted(invalid)))
@@ -207,7 +203,7 @@ class TumblrExtractor(Extractor):
         # it's unknown whether all gifs in this case are actually webps
         # incorrect extensions will be corrected by 'adjust-extensions'
         if post["extension"] == "gif":
-            post["_fallback"] = (url + "v",)
+            post["_fallback"] = (f"{url}v", )
             post["_http_headers"] = {"Accept":  # copied from chrome 106
                                      "image/avif,image/webp,image/apng,"
                                      "image/svg+xml,image/*,*/*;q=0.8"}
@@ -483,8 +479,7 @@ class TumblrAPI(oauth.OAuth1API):
     def _call(self, blog, endpoint, params, **kwargs):
         if self.api_key:
             params["api_key"] = self.api_key
-        url = "https://api.tumblr.com/v2/blog/{}/{}".format(
-            blog, endpoint)
+        url = f"https://api.tumblr.com/v2/blog/{blog}/{endpoint}"
 
         response = self.request(url, params=params, **kwargs)
 
@@ -503,7 +498,6 @@ class TumblrAPI(oauth.OAuth1API):
         elif status == 404:
             raise exception.NotFoundError("user or post")
         elif status == 429:
-
             # daily rate limit
             if response.headers.get("x-ratelimit-perday-remaining") == "0":
                 self.log.info("Daily API rate limit exceeded")
@@ -526,9 +520,7 @@ class TumblrAPI(oauth.OAuth1API):
                     "Aborting - Rate limit will reset at %s",
                     "{:02}:{:02}:{:02}".format(t.hour, t.minute, t.second))
 
-            # hourly rate limit
-            reset = response.headers.get("x-ratelimit-perhour-reset")
-            if reset:
+            if reset := response.headers.get("x-ratelimit-perhour-reset"):
                 self.log.info("Hourly API rate limit exceeded")
                 self.extractor.wait(seconds=reset)
                 return self._call(blog, endpoint, params)

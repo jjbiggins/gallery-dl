@@ -105,21 +105,22 @@ class PixivExtractor(Extractor):
     def _make_work(kind, url, user):
         p = url.split("/")
         return {
-            "create_date"     : "{}-{}-{}T{}:{}:{}+09:00".format(
-                p[5], p[6], p[7], p[8], p[9], p[10]) if len(p) > 9 else None,
-            "height"          : 0,
-            "id"              : kind,
-            "image_urls"      : None,
-            "meta_pages"      : (),
+            "create_date": f"{p[5]}-{p[6]}-{p[7]}T{p[8]}:{p[9]}:{p[10]}+09:00"
+            if len(p) > 9
+            else None,
+            "height": 0,
+            "id": kind,
+            "image_urls": None,
+            "meta_pages": (),
             "meta_single_page": {"original_image_url": url},
-            "page_count"      : 1,
-            "sanity_level"    : 0,
-            "tags"            : (),
-            "title"           : kind,
-            "type"            : kind,
-            "user"            : user,
-            "width"           : 0,
-            "x_restrict"      : 0,
+            "page_count": 1,
+            "sanity_level": 0,
+            "tags": (),
+            "title": kind,
+            "type": kind,
+            "user": user,
+            "width": 0,
+            "x_restrict": 0,
         }
 
     def works(self):
@@ -149,13 +150,16 @@ class PixivUserExtractor(PixivExtractor):
         self.user_id = match.group(1)
 
     def items(self):
-        base = "{}/users/{}/".format(self.root, self.user_id)
-        return self._dispatch_extractors((
-            (PixivAvatarExtractor    , base + "avatar"),
-            (PixivBackgroundExtractor, base + "background"),
-            (PixivArtworksExtractor  , base + "artworks"),
-            (PixivFavoriteExtractor  , base + "bookmarks/artworks"),
-        ), ("artworks",))
+        base = f"{self.root}/users/{self.user_id}/"
+        return self._dispatch_extractors(
+            (
+                (PixivAvatarExtractor, f"{base}avatar"),
+                (PixivBackgroundExtractor, f"{base}background"),
+                (PixivArtworksExtractor, f"{base}artworks"),
+                (PixivFavoriteExtractor, f"{base}bookmarks/artworks"),
+            ),
+            ("artworks",),
+        )
 
 
 class PixivArtworksExtractor(PixivExtractor):
@@ -267,7 +271,7 @@ class PixivBackgroundExtractor(PixivExtractor):
         work = self._make_work("background", url, detail["user"])
         if url.endswith(".jpg"):
             url = url[:-4]
-            work["_fallback"] = (url + ".png", url + ".gif")
+            work["_fallback"] = f"{url}.png", f"{url}.gif"
         return (work,)
 
 
@@ -289,7 +293,7 @@ class PixivMeExtractor(PixivExtractor):
         self.account = match.group(1)
 
     def items(self):
-        url = "https://pixiv.me/" + self.account
+        url = f"https://pixiv.me/{self.account}"
         data = {"_extractor": PixivUserExtractor}
         response = self.request(
             url, method="HEAD", allow_redirects=False, notfound="user")
@@ -404,8 +408,8 @@ class PixivFavoriteExtractor(PixivExtractor):
 
         if not uid:
             uid = query.get("id")
-            if not uid:
-                self.subcategory = "bookmark"
+        if not uid:
+            self.subcategory = "bookmark"
 
         if kind == "following" or query.get("type") == "user":
             self.subcategory = "following"
@@ -422,10 +426,7 @@ class PixivFavoriteExtractor(PixivExtractor):
         elif self.tag:
             tag = text.unquote(self.tag)
 
-        restrict = "public"
-        if self.query.get("rest") == "hide":
-            restrict = "private"
-
+        restrict = "private" if self.query.get("rest") == "hide" else "public"
         return self.api.user_bookmarks_illust(self.user_id, tag, restrict)
 
     def metadata(self):
@@ -439,14 +440,11 @@ class PixivFavoriteExtractor(PixivExtractor):
         return {"user_bookmark": user}
 
     def _items_following(self):
-        restrict = "public"
-        if self.query.get("rest") == "hide":
-            restrict = "private"
-
+        restrict = "private" if self.query.get("rest") == "hide" else "public"
         for preview in self.api.user_following(self.user_id, restrict):
             user = preview["user"]
             user["_extractor"] = PixivUserExtractor
-            url = "https://www.pixiv.net/users/{}".format(user["id"])
+            url = f'https://www.pixiv.net/users/{user["id"]}'
             yield Message.Queue, url, user
 
 
@@ -503,7 +501,7 @@ class PixivRankingExtractor(PixivExtractor):
         date = query.get("date")
         if date:
             if len(date) == 8 and date.isdecimal():
-                date = "{}-{}-{}".format(date[0:4], date[4:6], date[6:8])
+                date = f"{date[:4]}-{date[4:6]}-{date[6:8]}"
             else:
                 self.log.warning("invalid date '%s'", date)
                 date = None
@@ -649,7 +647,7 @@ class PixivPixivisionExtractor(PixivExtractor):
         )
 
     def metadata(self):
-        url = "https://www.pixivision.net/en/a/" + self.pixivision_id
+        url = f"https://www.pixivision.net/en/a/{self.pixivision_id}"
         headers = {"User-Agent": "Mozilla/5.0"}
         self.page = self.request(url, headers=headers).text
 
@@ -690,14 +688,14 @@ class PixivSeriesExtractor(PixivExtractor):
         self.user_id, self.series_id = match.groups()
 
     def works(self):
-        url = self.root + "/ajax/series/" + self.series_id
+        url = f"{self.root}/ajax/series/{self.series_id}"
         params = {"p": 1}
         headers = {
             "Accept": "application/json",
-            "Referer": "{}/user/{}/series/{}".format(
-                self.root, self.user_id, self.series_id),
+            "Referer": f"{self.root}/user/{self.user_id}/series/{self.series_id}",
             "Alt-Used": "www.pixiv.net",
         }
+
 
         while True:
             data = self.request(url, params=params, headers=headers).json()
@@ -741,7 +739,7 @@ class PixivSketchExtractor(Extractor):
         self.username = match.group(1)
 
     def items(self):
-        headers = {"Referer": "{}/@{}".format(self.root, self.username)}
+        headers = {"Referer": f"{self.root}/@{self.username}"}
 
         for post in self.posts():
             media = post["media"]
@@ -764,22 +762,22 @@ class PixivSketchExtractor(Extractor):
                 yield Message.Url, url, post
 
     def posts(self):
-        url = "{}/api/walls/@{}/posts/public.json".format(
-            self.root, self.username)
+        url = f"{self.root}/api/walls/@{self.username}/posts/public.json"
         headers = {
             "Accept": "application/vnd.sketch-v4+json",
-            "X-Requested-With": "{}/@{}".format(self.root, self.username),
-            "Referer": self.root + "/",
+            "X-Requested-With": f"{self.root}/@{self.username}",
+            "Referer": f"{self.root}/",
         }
+
 
         while True:
             data = self.request(url, headers=headers).json()
             yield from data["data"]["items"]
 
-            next_url = data["_links"].get("next")
-            if not next_url:
+            if next_url := data["_links"].get("next"):
+                url = self.root + next_url["href"]
+            else:
                 return
-            url = self.root + next_url["href"]
 
 
 class PixivAppAPI():
@@ -901,7 +899,7 @@ class PixivAppAPI():
         return self._call("/v1/ugoira/metadata", params)["ugoira_metadata"]
 
     def _call(self, endpoint, params=None):
-        url = "https://app-api.pixiv.net" + endpoint
+        url = f"https://app-api.pixiv.net{endpoint}"
 
         while True:
             self.login()

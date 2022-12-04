@@ -37,13 +37,14 @@ class MangaparkBase():
             elif key == "s":
                 data["stream"] = text.parse_int(value)
             elif key == "e":
-                data["chapter_minor"] = "v" + value
+                data["chapter_minor"] = f"v{value}"
 
     @staticmethod
     def parse_chapter_title(title, data):
-        match = re.search(r"(?i)(?:vol(?:ume)?[ .]*(\d+) )?"
-                          r"ch(?:apter)?[ .]*(\d+)(\.\w+)?", title)
-        if match:
+        if match := re.search(
+            r"(?i)(?:vol(?:ume)?[ .]*(\d+) )?" r"ch(?:apter)?[ .]*(\d+)(\.\w+)?",
+            title,
+        ):
             vol, ch, data["chapter_minor"] = match.groups()
             data["volume"] = text.parse_int(vol)
             data["chapter"] = text.parse_int(ch)
@@ -75,7 +76,7 @@ class MangaparkChapterExtractor(MangaparkBase, ChapterExtractor):
     def __init__(self, match):
         tld, self.path = match.groups()
         self.root = self.root_fmt.format(tld)
-        url = "{}/manga/{}?zoom=2".format(self.root, self.path)
+        url = f"{self.root}/manga/{self.path}?zoom=2"
         ChapterExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -134,9 +135,11 @@ class MangaparkMangaExtractor(MangaparkBase, MangaExtractor):
 
     def chapters(self, page):
         results = []
-        data = {"lang": "en", "language": "English"}
-        data["manga"] = text.unescape(
-            text.extr(page, '<title>', ' Manga - '))
+        data = {
+            "lang": "en",
+            "language": "English",
+            "manga": text.unescape(text.extr(page, '<title>', ' Manga - ')),
+        }
 
         for stream in page.split('<div id="stream_')[1:]:
             data["stream"] = text.parse_int(text.extr(stream, '', '"'))
@@ -151,11 +154,7 @@ class MangaparkMangaExtractor(MangaparkBase, MangaExtractor):
                 if "chapter" not in data:
                     self.parse_chapter_title(title1, data)
 
-                if title2:
-                    data["title"] = title2.strip()
-                else:
-                    data["title"] = title1.partition(":")[2].strip()
-
+                data["title"] = title2.strip() if title2 else title1.partition(":")[2].strip()
                 data["count"] = text.parse_int(count)
                 results.append((self.root + path, data.copy()))
                 data.pop("chapter", None)

@@ -67,12 +67,11 @@ class SankakuExtractor(BooruExtractor):
         tags = collections.defaultdict(list)
         types = self.TAG_TYPES
         for tag in post["tags"]:
-            name = tag["name"]
-            if name:
+            if name := tag["name"]:
                 tags[types[tag["type"]]].append(name)
         for key, value in tags.items():
-            post["tags_" + key] = value
-            post["tag_string_" + key] = " ".join(value)
+            post[f"tags_{key}"] = value
+            post[f"tag_string_{key}"] = " ".join(value)
 
 
 class SankakuTagExtractor(SankakuExtractor):
@@ -213,7 +212,7 @@ class SankakuBooksExtractor(SankakuExtractor):
         params = {"tags": self.tags, "pool_type": "0"}
         for pool in SankakuAPI(self).pools_keyset(params):
             pool["_extractor"] = SankakuPoolExtractor
-            url = "https://sankaku.app/books/{}".format(pool["id"])
+            url = f'https://sankaku.app/books/{pool["id"]}'
             yield Message.Queue, url, pool
 
 
@@ -223,10 +222,11 @@ class SankakuAPI():
     def __init__(self, extractor):
         self.extractor = extractor
         self.headers = {
-            "Accept" : "application/vnd.sankaku.api+json;v=2",
-            "Origin" : extractor.root,
-            "Referer": extractor.root + "/",
+            "Accept": "application/vnd.sankaku.api+json;v=2",
+            "Origin": extractor.root,
+            "Referer": f"{extractor.root}/",
         }
+
 
         self.username, self.password = self.extractor._get_auth_info()
         if not self.username:
@@ -234,18 +234,19 @@ class SankakuAPI():
 
     def pools(self, pool_id):
         params = {"lang": "en"}
-        return self._call("/pools/" + pool_id, params)
+        return self._call(f"/pools/{pool_id}", params)
 
     def pools_keyset(self, params):
         return self._pagination("/pools/keyset", params)
 
     def posts(self, post_id):
         params = {
-            "lang" : "en",
-            "page" : "1",
+            "lang": "en",
+            "page": "1",
             "limit": "1",
-            "tags" : "id_range:" + post_id,
+            "tags": f"id_range:{post_id}",
         }
+
         return self._call("/posts", params)
 
     def posts_keyset(self, params):
@@ -256,7 +257,7 @@ class SankakuAPI():
             _authenticate_impl(self.extractor, self.username, self.password)
 
     def _call(self, endpoint, params=None):
-        url = "https://capi-v2.sankakucomplex.com" + endpoint
+        url = f"https://capi-v2.sankakucomplex.com{endpoint}"
         for _ in range(5):
             self.authenticate()
             response = self.extractor.request(
@@ -303,8 +304,7 @@ class SankakuAPI():
 
                 for post in posts:
                     if not expires:
-                        url = post["file_url"]
-                        if url:
+                        if url := post["file_url"]:
                             expires = text.parse_int(
                                 text.extr(url, "e=", "&")) - 60
 

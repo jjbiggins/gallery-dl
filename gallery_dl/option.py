@@ -40,8 +40,9 @@ class DeprecatedConfigConstAction(argparse.Action):
     """Set argparse const values as config values + deprecation warning"""
     def __call__(self, parser, namespace, values, option_string=None):
         sys.stderr.write(
-            "warning: {} is deprecated. Use {} instead.\n".format(
-                "/".join(self.option_strings), self.choices))
+            f'warning: {"/".join(self.option_strings)} is deprecated. Use {self.choices} instead.\n'
+        )
+
         namespace.options.append(((), self.dest, self.const))
 
 
@@ -63,14 +64,12 @@ class Formatter(argparse.HelpFormatter):
         super().__init__(max_help_position=30, *args, **kwargs)
 
     def _format_action_invocation(self, action):
-        opts = action.option_strings[:]
-        if opts:
-            if action.nargs != 0:
-                args_string = self._format_args(action, "ARG")
-                opts[-1] += " " + args_string
-            return ', '.join(opts)
-        else:
+        if not (opts := action.option_strings[:]):
             return self._metavar_formatter(action, action.dest)(1)[0]
+        if action.nargs != 0:
+            args_string = self._format_args(action, "ARG")
+            opts[-1] += f" {args_string}"
+        return ', '.join(opts)
 
 
 def build_parser():

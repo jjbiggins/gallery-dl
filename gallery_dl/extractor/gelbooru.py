@@ -24,16 +24,14 @@ class GelbooruBase():
         params["api_key"] = self.api_key
         params["user_id"] = self.user_id
 
-        url = self.root + "/index.php?page=dapi&s=post&q=index&json=1"
+        url = f"{self.root}/index.php?page=dapi&s=post&q=index&json=1"
         data = self.request(url, params=params).json()
 
         if "post" not in data:
             return ()
 
         posts = data["post"]
-        if not isinstance(posts, list):
-            return (posts,)
-        return posts
+        return posts if isinstance(posts, list) else (posts, )
 
     def _pagination(self, params):
         params["pid"] = self.page_start
@@ -43,30 +41,28 @@ class GelbooruBase():
         while True:
             posts = self._api_request(params)
 
-            for post in posts:
-                yield post
-
+            yield from posts
             if len(posts) < limit:
                 return
 
             if "pid" in params:
                 del params["pid"]
-            params["tags"] = "{} id:<{}".format(self.tags, post["id"])
+            params["tags"] = f'{self.tags} id:<{post["id"]}'
 
     @staticmethod
     def _file_url(post):
         url = post["file_url"]
         if url.endswith((".webm", ".mp4")):
             md5 = post["md5"]
-            path = "/images/{}/{}/{}.webm".format(md5[0:2], md5[2:4], md5)
+            path = f"/images/{md5[:2]}/{md5[2:4]}/{md5}.webm"
             post["_fallback"] = GelbooruBase._video_fallback(path)
-            url = "https://img3.gelbooru.com" + path
+            url = f"https://img3.gelbooru.com{path}"
         return url
 
     @staticmethod
     def _video_fallback(path):
-        yield "https://img2.gelbooru.com" + path
-        yield "https://img1.gelbooru.com" + path
+        yield f"https://img2.gelbooru.com{path}"
+        yield f"https://img1.gelbooru.com{path}"
 
     def _notes(self, post, page):
         notes_data = text.extr(page, '<section id="notes"', '</section>')
@@ -75,14 +71,16 @@ class GelbooruBase():
 
         post["notes"] = notes = []
         extr = text.extract
-        for note in text.extract_iter(notes_data, '<article', '</article>'):
-            notes.append({
-                "width" : int(extr(note, 'data-width="', '"')[0]),
+        notes.extend(
+            {
+                "width": int(extr(note, 'data-width="', '"')[0]),
                 "height": int(extr(note, 'data-height="', '"')[0]),
-                "x"     : int(extr(note, 'data-x="', '"')[0]),
-                "y"     : int(extr(note, 'data-y="', '"')[0]),
-                "body"  : extr(note, 'data-body="', '"')[0],
-            })
+                "x": int(extr(note, 'data-x="', '"')[0]),
+                "y": int(extr(note, 'data-y="', '"')[0]),
+                "body": extr(note, 'data-body="', '"')[0],
+            }
+            for note in text.extract_iter(notes_data, '<article', '</article>')
+        )
 
 
 class GelbooruTagExtractor(GelbooruBase,
@@ -117,7 +115,7 @@ class GelbooruPoolExtractor(GelbooruBase,
     )
 
     def metadata(self):
-        url = self.root + "/index.php"
+        url = f"{self.root}/index.php"
         self._params = {
             "page": "pool",
             "s"   : "show",
@@ -136,7 +134,7 @@ class GelbooruPoolExtractor(GelbooruBase,
         }
 
     def posts(self):
-        url = self.root + "/index.php"
+        url = f"{self.root}/index.php"
         params = self._params
 
         page = self._page

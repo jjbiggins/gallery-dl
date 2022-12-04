@@ -65,7 +65,7 @@ class TestPredicate(unittest.TestCase):
         dummy = None
 
         pred = util.RangePredicate(" - 3 , 4-  4, 2-6")
-        for i in range(6):
+        for _ in range(6):
             self.assertTrue(pred(dummy, dummy))
         with self.assertRaises(exception.StopExtraction):
             bool(pred(dummy, dummy))
@@ -548,8 +548,7 @@ class TestOther(unittest.TestCase):
         result = [(3, 33), (2, 22), (1, 11)]
 
         def gen():
-            for i in seq:
-                yield i
+            yield from seq
 
         def gen_2():
             yield from seq

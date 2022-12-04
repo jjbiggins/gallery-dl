@@ -39,7 +39,7 @@ class NanaGalleryExtractor(GalleryExtractor):
 
     def __init__(self, match):
         self.gallery_id = match.group(1)
-        url = "https://nana.my.id/reader/" + self.gallery_id
+        url = f"https://nana.my.id/reader/{self.gallery_id}"
         GalleryExtractor.__init__(self, match, url)
 
     def metadata(self, page):
@@ -60,10 +60,7 @@ class NanaGalleryExtractor(GalleryExtractor):
 
     def images(self, page):
         data = json.loads(text.extr(page, "Reader.pages = ", ".pages"))
-        return [
-            ("https://nana.my.id" + image, None)
-            for image in data["pages"]
-        ]
+        return [(f"https://nana.my.id{image}", None) for image in data["pages"]]
 
 
 class NanaSearchExtractor(Extractor):
@@ -91,13 +88,13 @@ class NanaSearchExtractor(Extractor):
 
     def items(self):
         if "favorites:" in self.params["q"]:
-            favkey = self.config("favkey")
-            if not favkey:
+            if favkey := self.config("favkey"):
+                self.session.cookies.set("favkey", favkey, domain="nana.my.id")
+
+            else:
                 raise exception.AuthenticationError(
                     "'Favorite key' not provided. "
                     "Please see 'https://nana.my.id/tutorial'")
-            self.session.cookies.set("favkey", favkey, domain="nana.my.id")
-
         data = {"_extractor": NanaGalleryExtractor}
         while True:
             try:

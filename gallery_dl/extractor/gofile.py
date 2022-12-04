@@ -91,7 +91,7 @@ class GofileFolderExtractor(Extractor):
                 num += 1
                 content["num"] = num
                 content["filename"], _, content["extension"] = \
-                    content["name"].rpartition(".")
+                        content["name"].rpartition(".")
                 yield Message.Url, content["link"], content
 
             elif content["type"] == "folder":
@@ -112,7 +112,7 @@ class GofileFolderExtractor(Extractor):
     @memcache()
     def _get_website_token(self):
         self.log.debug("Fetching website token")
-        page = self.request(self.root + "/contents/files.html").text
+        page = self.request(f"{self.root}/contents/files.html").text
         return text.extract(page, "websiteToken:", ",")[0].strip("\" ")
 
     def _get_content(self, content_id):
@@ -124,7 +124,9 @@ class GofileFolderExtractor(Extractor):
 
     def _api_request(self, endpoint, params=None):
         response = self.request(
-            "https://api.gofile.io/" + endpoint, params=params).json()
+            f"https://api.gofile.io/{endpoint}", params=params
+        ).json()
+
 
         if response["status"] != "ok":
             if response["status"] == "error-notFound":

@@ -22,15 +22,14 @@ class MangaseeBase():
     def _transform_chapter(data):
         chapter = data["Chapter"]
         return {
-            "title"   : data["ChapterName"] or "",
-            "index"   : chapter[0],
-            "chapter" : int(chapter[1:-1]),
-            "chapter_minor": "" if chapter[-1] == "0" else "." + chapter[-1],
+            "title": data["ChapterName"] or "",
+            "index": chapter[0],
+            "chapter": int(chapter[1:-1]),
+            "chapter_minor": "" if chapter[-1] == "0" else f".{chapter[-1]}",
             "chapter_string": chapter,
-            "lang"    : "en",
+            "lang": "en",
             "language": "English",
-            "date"    : text.parse_datetime(
-                data["Date"], "%Y-%m-%d %H:%M:%S"),
+            "date": text.parse_datetime(data["Date"], "%Y-%m-%d %H:%M:%S"),
         }
 
 
@@ -107,12 +106,12 @@ class MangaseeChapterExtractor(MangaseeBase, ChapterExtractor):
         if chapter[-1] == "0":
             chapter = chapter[:-1]
         else:
-            chapter = chapter[:-1] + "." + chapter[-1]
+            chapter = f"{chapter[:-1]}.{chapter[-1]}"
 
-        base = "https://{}/manga/{}/".format(self.domain, self.slug)
+        base = f"https://{self.domain}/manga/{self.slug}/"
         if self.chapter["Directory"]:
             base += self.chapter["Directory"] + "/"
-        base += chapter + "-"
+        base += f"{chapter}-"
 
         return [
             ("{}{:>03}.png".format(base, i), None)
@@ -148,8 +147,8 @@ class MangaseeMangaExtractor(MangaseeBase, MangaExtractor):
 
         result = []
         for data in map(self._transform_chapter, chapters):
-            url = "{}/read-online/{}-chapter-{}{}".format(
-                self.root, slug, data["chapter"], data["chapter_minor"])
+            url = f'{self.root}/read-online/{slug}-chapter-{data["chapter"]}{data["chapter_minor"]}'
+
             if data["index"] != "1":
                 url += "-index-" + data["index"]
             url += "-page-1.html"
